@@ -8,6 +8,6 @@ menu <- list(
 
 ui <- dashboardPage(
   dashboardHeader(title = "Experiment control"),
-  dashboardSidebar(minified = F, sidebarMenu(menu)),
+  dashboardSidebar(collapsed = F, minified = F, sidebarMenu(menu)),
   dashboardBody(tabItems(log, quality))
 )

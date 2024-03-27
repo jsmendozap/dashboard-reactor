@@ -1,10 +1,10 @@
 log <- tabItem(tabName = 'log',
                fluidRow(
-                 box(title = "Log summary",
+                 box(title = "Events summary",
                      status = 'primary',
                      solidHeader = T,
                      width = 7,
-                     dataTableOutput('log')
+                     DTOutput('log')
                  ),
                  box(title = "Variable plot",
                      status = "info",

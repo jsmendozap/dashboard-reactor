@@ -25,8 +25,8 @@ server <- function(input, output) {
     }
   })
   
-  output$log <- renderDataTable(bd %>%
-                                  slice(1, .by = event) %>%
-                                  select(1, 16, 12) %>%
-                                  rename('Date' = 1, 'Event' = 2, 'Duration' = 3))
+  output$log <- renderDT(bd %>%
+                          slice(1, .by = event) %>%
+                          select(1, 16, 12) %>%
+                          rename('Date' = 1, 'Event' = 2, 'Duration' = 3))
 }
