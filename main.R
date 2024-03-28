@@ -3,7 +3,7 @@
 if (!"pacman" %in% installed.packages()) {install.packages('pacman')}
 
 pacman::p_load(tidyverse, readxl, janitor, DT, dygraphs,
-               bs4Dash, shiny, prettyunits)
+               bs4Dash, shiny, prettyunits, plotly)
 
 walk(.x = c("ui.R", "server.R"), .f = source)
-shinyApp(ui, server) %>% runApp(port = 3025)
+shinyApp(ui, server) %>% runApp(port = 3026)

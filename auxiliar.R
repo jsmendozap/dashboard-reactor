@@ -1,3 +1,5 @@
+### Split and label events in file ---------------------------------------------
+
 assign_event <- function(df){
   df <- df %>% 
     select(fic_140, rswitch_val) %>%
@@ -36,12 +38,34 @@ assign_event <- function(df){
   df %>% fill(event) %>% pull(event)
 }
 
-bd <- read_excel('RB003Test.xlsx') %>%
+### Processing Normolite column to plot ----------------------------------------
+
+norm_deriv <- function(col, lag){
+  index <- which(diff(col) < -1)
+  new <- col[1:index[1]]
+  
+  for (i in 2:(length(index) + 1)){
+    value <- sum(col[index[1:i - 1]])
+    if (i == (length(index) + 1)){
+      aux <- col[(index[i - 1] + 1):length(col)] + value
+    } else {
+      aux <- col[(index[i - 1] + 1):index[i]] + value
+    }
+    new <- c(new, aux)
+  }
+  
+  diff(new, lag = lag)/lag
+}
+
+
+### reading file ---------------------------------------------------------------
+
+bd <- read_excel('RB003Test.xlsx') %>% 
   janitor::clean_names() %>% 
-  select(1, 2, 4, 6, 8, 9, 13:15, 26) %>% 
-  mutate(across(.cols = 2:5, .fns = ~ifelse(.x < 0, 0, .x))) %>%
-  filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>%
-  rename('p_set' = 7) %>% 
+  select(1:9, 13:15, 25:26) %>%
+  mutate(across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
+  filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>% 
+  rename('p_set' = 10) %>% 
   group_by(event = assign_event(.)) %>%
   mutate(n = pretty_sec(n() * 60)) %>%
   ungroup() %>%
