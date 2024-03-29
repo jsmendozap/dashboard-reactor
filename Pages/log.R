@@ -1,7 +1,7 @@
 log <- tabItem(tabName = 'log',
                fluidRow(
                  box(title = "Events summary",
-                     status = 'primary',
+                     status = 'info',
                      solidHeader = T,
                      width = 7,
                      DTOutput('log')

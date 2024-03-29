@@ -62,10 +62,10 @@ norm_deriv <- function(col, lag){
 
 bd <- read_excel('RB003Test.xlsx') %>% 
   janitor::clean_names() %>% 
-  select(1:9, 13:15, 25:26) %>%
+  select(1:11, 13:17, 25:26) %>%
   mutate(across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
   filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>% 
-  rename('p_set' = 10) %>% 
+  rename('p_set' = 12) %>% 
   group_by(event = assign_event(.)) %>%
   mutate(n = pretty_sec(n() * 60)) %>%
   ungroup() %>%

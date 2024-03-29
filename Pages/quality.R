@@ -8,7 +8,7 @@ quality <- tabItem(tabName = 'quality',
                               tabPanel(title = "Correlations", DTOutput('corr'))
                               ),
                             box(title = "Normalized milimeters plot",
-                                status = 'secondary',
+                                status = 'info',
                                 solidHeader = T,
                                 width = 6,
                                 sliderInput('lag', label = 'Choose the number of points to derivate',
@@ -17,7 +17,15 @@ quality <- tabItem(tabName = 'quality',
                             )
                             )
                           ),
-                 tabPanel("Temperature", "Tab content 2"),
-                 tabPanel("Pressure", "Tab content 3")
+                 tabPanel(title = "Temperature",
+                          fluidRow(
+                            box(width = 7, status = 'info', solidHeader = T, DTOutput('temp')),
+                            box(width = 5, status = 'info', solidHeader = T, plotlyOutput('plotTemp')))
+                          ),
+                 tabPanel(title = "Pressure",
+                          fluidRow(
+                            box(width = 7, status = 'info', solidHeader = T, DTOutput('press')),
+                            box(width = 5, status = 'info', solidHeader = T, plotlyOutput('plotPress')))
+                          )
                )
 )

@@ -27,7 +27,7 @@ server <- function(input, output) {
   
   output$log <- renderDT(bd %>%
                           slice(1, .by = event) %>%
-                          select(1, 20, 16) %>%
+                          select(date_time, name, n) %>%
                           rename('Date' = 1, 'Event' = 2, 'Duration' = 3))
   
   output$flow <- renderDT(bd %>% 
@@ -64,6 +64,55 @@ server <- function(input, output) {
         labs(x = "Time", y = "Normalized milimeters") +
         theme_bw()
       
+    ggplotly(plot)
+  })
+  
+  output$temp <- renderDT({
+    bd %>%
+      summarise(name = name[1],
+                rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
+                mean_measure = mean(tic_300_pv),
+                mean_set = mean(tic_300_sp),
+                mean_r1 = mean(te_310),
+                mean_r2 = mean(te_320),
+                .by = event) %>%
+      select(-1) %>%
+      mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
+      rename("Event" = 1, "Avg. measured" = 3, "Avg. setted" = 4,
+             "Rate of change" = 2, "Avg. Reactor 1" = 5, "Avg. Reactor 2" = 6) %>%
+      datatable()
+  })
+  
+  output$plotTemp <- renderPlotly({
+    plot <- ggplot(bd) +
+      geom_point(aes(x = tic_300_sp, y = tic_300_pv), size = 0.5) +
+      labs(x = "Setted temperature", y = "Measured temperature") +
+      theme_bw()
+    
+    ggplotly(plot)
+  })
+  
+  output$press <- renderDT({
+    bd %>% 
+      summarise(name = name[1],
+                mean_set = mean(p_set),
+                mean_r1 = mean(pt_310),
+                mean_r2 = mean(pt_320),
+                delta = mean_r1 - mean_r2,
+                .by = event) %>%
+      select(-1) %>% 
+      mutate(across(.cols = 2:5, .fns = ~round(.x, 1))) %>%
+      rename("Event" = 1, "Avg. setted" = 2, "Avg. Reactor 1" = 3,
+             "Avg. Reactor 2" = 4, "Delta of pressure" = 5) %>%
+      datatable()
+  })
+  
+  output$plotPress <- renderPlotly({
+    plot <- ggplot(bd) +
+      geom_point(aes(x = pt_310, y = pt_320), size = 0.5) +
+      labs(x = "Pressure reactor 1", y = "Pressure reactor 2") +
+      theme_bw()
+    
     ggplotly(plot)
   })
 }
