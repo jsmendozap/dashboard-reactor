@@ -57,24 +57,39 @@ norm_deriv <- function(col, lag){
   diff(new, lag = lag)/lag
 }
 
+### Mode -----------------------------------------------------------------------
+
+mode <- function(x){
+  res <- table(x) %>% sort(decreasing = T) %>% names()
+  res[1]
+}
 
 ### reading file ---------------------------------------------------------------
 
-bd <- read_excel('RB003Test.xlsx') %>% 
-  janitor::clean_names() %>% 
-  select(1:11, 13:17, 25:26) %>%
-  mutate(across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
-  filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>% 
-  rename('p_set' = 12) %>% 
-  group_by(event = assign_event(.)) %>%
-  mutate(n = pretty_sec(n() * 60)) %>%
-  ungroup() %>%
-  rowwise() %>%
-  mutate(temp = case_when(
-    near(tic_300_sp, tic_300_pv, 10) ~ "Isotherm",
-    tic_300_sp > tic_300_pv ~ "Heating",
-    tic_300_sp < tic_300_pv ~ "Cooling down"),
-    r1 = if_else(rswitch_val == 1, sum(fi_120, fi_130, fi_140), fi_110),
-    r2 = if_else(rswitch_val == 1, fi_110, sum(fi_120, fi_130, fi_140)),
-    name = str_glue("R1-{round(r1)} R2-{round(r2)} T-{temp} P-{p_set}")) %>%
-  ungroup()
+load_file <- function(file){
+  read_excel(file) %>% 
+    janitor::clean_names() %>% 
+    select(1:11, 13:17, 25:26) %>%
+    mutate(across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
+    filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>% 
+    rename('p_set' = 12) %>% 
+    group_by(event = assign_event(.)) %>%
+    mutate(n = pretty_sec(n() * 60)) %>%
+    ungroup() %>%
+    rowwise() %>%
+    mutate(
+      temp = case_when(
+        tic_300_sp == tic_300_pv ~ "Isotherm",
+        tic_300_sp > tic_300_pv ~ "Heating",
+        tic_300_sp < tic_300_pv ~ "Cooling down"),
+      r1 = if_else(rswitch_val == 1, sum(fi_120, fi_130, fi_140), fi_110),
+      r2 = if_else(rswitch_val == 1, fi_110, sum(fi_120, fi_130, fi_140))) %>%
+    ungroup() %>%
+    group_by(event) %>%
+    mutate(temp = mode(temp)) %>%
+    ungroup() %>%
+    rowwise() %>%
+    mutate(name = str_glue("R1-{round(r1)} R2-{round(r2)} T-{temp} P-{p_set}")) %>%
+    ungroup() 
+}
+  

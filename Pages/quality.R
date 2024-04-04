@@ -3,14 +3,14 @@ quality <- tabItem(tabName = 'quality',
                  id = "tabset1", height = "100%", width = 12,
                  tabPanel(title = "Flow", 
                           fluidRow( 
-                            tabBox(width = 6,
-                              tabPanel(title = "Total Flow", DTOutput('flow')),
+                            tabBox(width = 7,
+                              tabPanel(title = "Rate Flow", DTOutput('flow')),
                               tabPanel(title = "Correlations", DTOutput('corr'))
                               ),
                             box(title = "Normalized milimeters plot",
                                 status = 'info',
                                 solidHeader = T,
-                                width = 6,
+                                width = 5,
                                 sliderInput('lag', label = 'Choose the number of points to derivate',
                                             min = 1, max = 50, value = 5),
                                 plotlyOutput('norm')
@@ -19,13 +19,15 @@ quality <- tabItem(tabName = 'quality',
                           ),
                  tabPanel(title = "Temperature",
                           fluidRow(
-                            box(width = 7, status = 'info', solidHeader = T, DTOutput('temp')),
-                            box(width = 5, status = 'info', solidHeader = T, plotlyOutput('plotTemp')))
+                            box(width = 8, status = 'info', solidHeader = T, DTOutput('temp')),
+                            box(width = 4, status = 'info', solidHeader = T, plotlyOutput('plotTemp')))
                           ),
                  tabPanel(title = "Pressure",
                           fluidRow(
                             box(width = 7, status = 'info', solidHeader = T, DTOutput('press')),
-                            box(width = 5, status = 'info', solidHeader = T, plotlyOutput('plotPress')))
+                            box(width = 5, status = 'info', solidHeader = T,
+                                uiOutput('selectEvent'),
+                                dygraphOutput('plotPress')))
                           )
                )
 )

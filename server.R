@@ -1,11 +1,16 @@
 source("auxiliar.R")
 
 server <- function(input, output) {
+  bd <- reactive({
+    req(input$file)
+    print(input$file$name)
+    load_file(input$file$name)
+  })
+  
   selected <- reactive({ input$var })
   
   output$dygraph <- renderDygraph({
-    
-    plot <- dygraph(bd %>% select(1, selected())) %>%
+    plot <- dygraph(bd() %>% select(1, selected())) %>%
       dySeries(selected()) %>%
       dyRangeSelector() %>%
       dyOptions(useDataTimezone = TRUE) %>%
@@ -13,7 +18,7 @@ server <- function(input, output) {
       dyLegend(labelsDiv = 'legend')
     
     if(!is.null(input$log_rows_selected)){
-      time <- bd %>% 
+      time <- bd() %>% 
         filter(event == input$log_rows_selected) %>%
         slice(1, n()) %>%
         pull(date_time)
@@ -25,24 +30,24 @@ server <- function(input, output) {
     }
   })
   
-  output$log <- renderDT(bd %>%
+  output$log <- renderDT(bd() %>%
                           slice(1, .by = event) %>%
                           select(date_time, name, n) %>%
                           rename('Date' = 1, 'Event' = 2, 'Duration' = 3))
   
-  output$flow <- renderDT(bd %>% 
-                            summarise(across(.cols = c(2, 4, 6, 8), .fn = \(x) round(sum(x), 1)),
+  output$flow <- renderDT(bd() %>% 
+                            summarise(across(.cols = c(2, 4, 6, 8), .fn = \(x) round(sum(x)/n(), 1)),
                                       .by = event) %>%
                             select(-1) %>%
                             rowwise() %>%
                             mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
-                            rename('Air (mL)' = 1, 'Carbon dioxide (mL)' = 2,
-                                   'Argon / Propane (mL)' = 3, 'Nitrogen (mL)' = 4,
-                                   'Total flow (mL)' = 5))
+                            rename('Air (mL/min)' = 1, 'Carbon dioxide (mL/min)' = 2,
+                                   'Argon / Propane (mL/min)' = 3, 'Nitrogen (mL/min)' = 4,
+                                   'Total flow (mL/min)' = 5))
   
   
   output$corr <- renderDT({
-    bd %>% 
+    bd() %>% 
       summarise(cor_air = mean(((fi_110 + 1)/(1 + fic_110))) %>% round(1),
                 cor_co2 = mean(((fi_120 + 1)/(fic_120 + 1))) %>% round(1),
                 cor_ar = mean(((fi_130 + 1)/(fic_130 +1))) %>% round(1),
@@ -57,7 +62,7 @@ server <- function(input, output) {
   
   output$norm <- renderPlotly({
     
-    plot <- bd %>% 
+    plot <- bd() %>% 
       summarise(time = date_time[1:(nrow(.) - input$lag)], y = norm_deriv(normoliter_out, input$lag)) %>%
       ggplot() +
         geom_line(aes(x = time, y = y), linewidth = 0.2) +
@@ -68,7 +73,7 @@ server <- function(input, output) {
   })
   
   output$temp <- renderDT({
-    bd %>%
+    bd() %>%
       summarise(name = name[1],
                 rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
                 mean_measure = mean(tic_300_pv),
@@ -83,8 +88,9 @@ server <- function(input, output) {
       datatable()
   })
   
+  
   output$plotTemp <- renderPlotly({
-    plot <- ggplot(bd) +
+    plot <- ggplot(bd()) +
       geom_point(aes(x = tic_300_sp, y = tic_300_pv), size = 0.5) +
       labs(x = "Setted temperature", y = "Measured temperature") +
       theme_bw()
@@ -93,7 +99,7 @@ server <- function(input, output) {
   })
   
   output$press <- renderDT({
-    bd %>% 
+    bd() %>% 
       summarise(name = name[1],
                 mean_set = mean(p_set),
                 mean_r1 = mean(pt_310),
@@ -107,12 +113,26 @@ server <- function(input, output) {
       datatable()
   })
   
-  output$plotPress <- renderPlotly({
-    plot <- ggplot(bd) +
-      geom_point(aes(x = pt_310, y = pt_320), size = 0.5) +
-      labs(x = "Pressure reactor 1", y = "Pressure reactor 2") +
-      theme_bw()
-    
-    ggplotly(plot)
+  output$selectEvent <- renderUI({
+    selectInput(inputId = 'eventPlotPress', 
+                label = 'Select event to plot',
+                choices = unique(bd()$event))
   })
+  
+  EventSelected <- reactive({ input$eventPlotPress })
+  
+  output$plotPress <- renderDygraph({
+    req(input$eventPlotPress)
+    
+    bd() %>%
+      filter(event == EventSelected()) %>%
+      rowwise() %>%
+      transmute(time = date_time, delta = mean(pt_310) - mean(pt_320)) %>%
+      dygraph() %>%
+      dySeries("delta") %>%
+      dyRangeSelector() %>%
+      dyOptions(useDataTimezone = TRUE) %>%
+      dyLegend(labelsDiv = 'legend')
+  })
+  
 }
