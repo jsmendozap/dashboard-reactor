@@ -1,29 +1,26 @@
 ### Split and label events in file ---------------------------------------------
 
-assign_event <- function(df){
-  df <- df %>% 
-    select(fic_140, rswitch_val) %>%
-    mutate(event = NA)
+assign_event <- function(fic, val){
+  event_count <- c(rep(NA, length(fic)))
   
   event <- 0
   first_count <- T
   second_count <- T
   
-  for (i in 1:dim(df)[1]) {
+  for (i in 1:length(fic)) {
     
-    if (df[i, "fic_140"] == 100) {
+    if (fic[i] == 100) {
       if (first_count) {
         event <- event + 1
         first_count <- F
         second_count <- T
       }
       
-      df[i, "event"] = event
+      event_count[i] = event
       
-    } else if (df[i, "fic_140"] - df[i - 1, "fic_140"] != 0 |
-               df[i, "rswitch_val"] != df[i - 1, "rswitch_val"]) {
+    } else if (fic[i] - fic[i - 1] != 0 | val[i] != val[i - 1]) {
       
-      if(df[i, "rswitch_val"] != df[i - 1, "rswitch_val"]) {second_count <- T}
+      if(val[i] != val[i - 1]) {second_count <- T}
       
       if (second_count) {
         event <- event + 1
@@ -31,11 +28,12 @@ assign_event <- function(df){
         first_count <- T
       }
       
-      df[i, "event"] = event
+      event_count[i] = event
       
     }
   }
-  df %>% fill(event) %>% pull(event)
+  
+  data.frame(event = event_count) %>% fill(event) %>% pull(event)
 }
 
 ### Processing Normolite column to plot ----------------------------------------
@@ -70,10 +68,11 @@ load_file <- function(file){
   read_excel(file) %>% 
     janitor::clean_names() %>% 
     select(1:11, 13:17, 25:26) %>%
-    mutate(across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
+    mutate(date_time = dmy_hms(date_time),
+           across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
     filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>% 
     rename('p_set' = 12) %>% 
-    group_by(event = assign_event(.)) %>%
+    group_by(event = assign_event(fic_140, rswitch_val)) %>%
     mutate(n = pretty_sec(n() * 60)) %>%
     ungroup() %>%
     rowwise() %>%
