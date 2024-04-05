@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-if (!"pacman" %in% installed.packages()) { install.packages("pacman") }
+if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'http://cran.us.r-project.org') }
 
 pacman::p_load(
     tidyverse, readxl, janitor, DT, dygraphs,
