@@ -1,10 +1,9 @@
-source("auxiliar.R")
+source("src/auxiliar.R")
 
 server <- function(input, output) {
   bd <- reactive({
     req(input$file)
-    print(input$file$name)
-    load_file(input$file$name)
+    load_file(input$file$datapath)
   })
   
   selected <- reactive({ input$var })

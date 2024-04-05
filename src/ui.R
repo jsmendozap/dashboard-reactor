@@ -1,5 +1,5 @@
-source("Pages/log.R")
-source("Pages/quality.R")
+source("src/Pages/log.R")
+source("src/Pages/quality.R")
 
 menu <- list(
   fileInput("file", "Reactor file"),
