@@ -6,10 +6,10 @@ cat("Verifying and installing required packages\n")
 lib <- c("tidyverse", "readxl", "janitor", "DT", "dygraphs", "bs4Dash", "shiny", "prettyunits", "plotly")
 lapply(lib, \(x) { 
     if(rlang::is_installed(x)) {
-        library(x, character.only = T)
+        library(x, character.only = T, quietly = T)
     } else {
         pak::pkg_install(x)
-        library(x, character.only = T)
+        library(x, character.only = T, quietly = T)
     }
 })
 
