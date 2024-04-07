@@ -3,7 +3,7 @@
 if (!"pak" %in% installed.packages()) { install.packages("pak", repos = 'http://cran.us.r-project.org') }
 
 cat("Veryfing and installing required packages")
-lib <- c(tidyverse, readxl, janitor, DT, dygraphs, bs4Dash, shiny, prettyunits, plotly)
+lib <- c("tidyverse", "readxl", "janitor", "DT", "dygraphs", "bs4Dash", "shiny", "prettyunits", "plotly")
 lapply(lib, \(x) { 
     if(rlang::is_installed(x)) {
         library(x)
@@ -13,6 +13,6 @@ lapply(lib, \(x) {
     }
 }
 
-cat("Running application)
+cat("Running application")
 walk(.x = c("src/ui.R", "src/server.R"), .f = source)
 shinyApp(ui, server)
