@@ -1,11 +1,18 @@
 #!/usr/bin/env Rscript
 
-if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'http://cran.us.r-project.org') }
+if (!"pak" %in% installed.packages()) { install.packages("pak", repos = 'http://cran.us.r-project.org') }
 
-pacman::p_load(
-    tidyverse, readxl, janitor, DT, dygraphs,
-    bs4Dash, shiny, prettyunits, plotly
-)
+cat("Veryfing and installing required packages")
+lib <- c(tidyverse, readxl, janitor, DT, dygraphs, bs4Dash, shiny, prettyunits, plotly)
+lapply(lib, \(x) { 
+    if(rlang::is_installed(x)) {
+        library(x)
+    } else {
+        pak::pkg_install(x)
+        library(x)
+    }
+}
 
+cat("Running application)
 walk(.x = c("src/ui.R", "src/server.R"), .f = source)
 shinyApp(ui, server)
