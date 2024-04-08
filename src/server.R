@@ -32,7 +32,8 @@ server <- function(input, output) {
   output$log <- renderDT(bd() %>%
                           slice(1, .by = event) %>%
                           select(date_time, name, n) %>%
-                          rename('Date' = 1, 'Event' = 2, 'Duration' = 3))
+                          rename('Date' = 1, 'Event' = 2, 'Duration' = 3),
+                         selection = 'single')
   
   output$flow <- renderDT(bd() %>% 
                             summarise(across(.cols = c(2, 4, 6, 8), .fn = \(x) round(sum(x)/n(), 1)),
@@ -42,7 +43,8 @@ server <- function(input, output) {
                             mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
                             rename('Air (mL/min)' = 1, 'Carbon dioxide (mL/min)' = 2,
                                    'Argon / Propane (mL/min)' = 3, 'Nitrogen (mL/min)' = 4,
-                                   'Total flow (mL/min)' = 5))
+                                   'Total flow (mL/min)' = 5),
+                          selection = 'single')
   
   
   output$corr <- renderDT({
@@ -54,7 +56,7 @@ server <- function(input, output) {
                 .by = event) %>%
       select(-1) %>%
       rename('Air' = 1, 'Carbon dioxide' = 2, 'Argon/ propane' = 3, 'Nitrogen' = 4) %>%
-      datatable(options = list(autoWidth = TRUE)) %>%
+      datatable(options = list(autoWidth = TRUE), selection = 'single') %>%
       formatStyle(c('Air', 'Carbon dioxide', 'Argon/ propane', 'Nitrogen'),
                   backgroundColor = styleInterval(c(0.9, 1.1), c('red', 'lightgreen', 'red')))
   })
@@ -84,7 +86,7 @@ server <- function(input, output) {
       mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
       rename("Event" = 1, "Avg. measured" = 3, "Avg. setted" = 4,
              "Rate of change" = 2, "Avg. Reactor 1" = 5, "Avg. Reactor 2" = 6) %>%
-      datatable()
+      datatable(selection = 'single')
   })
   
   
@@ -109,22 +111,15 @@ server <- function(input, output) {
       mutate(across(.cols = 2:5, .fns = ~round(.x, 1))) %>%
       rename("Event" = 1, "Avg. setted" = 2, "Avg. Reactor 1" = 3,
              "Avg. Reactor 2" = 4, "Delta of pressure" = 5) %>%
-      datatable()
+      datatable(selection = 'single')
   })
-  
-  output$selectEvent <- renderUI({
-    selectInput(inputId = 'eventPlotPress', 
-                label = 'Select event to plot',
-                choices = unique(bd()$event))
-  })
-  
-  EventSelected <- reactive({ input$eventPlotPress })
   
   output$plotPress <- renderDygraph({
-    req(input$eventPlotPress)
+    
+    req(input$press_rows_selected)
     
     bd() %>%
-      filter(event == EventSelected()) %>%
+      filter(event == input$press_rows_selected) %>%
       rowwise() %>%
       transmute(time = date_time, delta = mean(pt_310) - mean(pt_320)) %>%
       dygraph() %>%

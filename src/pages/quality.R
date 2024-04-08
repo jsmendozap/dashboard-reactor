@@ -19,15 +19,15 @@ quality <- tabItem(tabName = 'quality',
                           ),
                  tabPanel(title = "Temperature",
                           fluidRow(
-                            box(width = 8, status = 'info', solidHeader = T, DTOutput('temp')),
-                            box(width = 4, status = 'info', solidHeader = T, plotlyOutput('plotTemp')))
+                            box(width = 7, status = 'info', solidHeader = T, DTOutput('temp')),
+                            box(width = 5, status = 'info', solidHeader = T, plotlyOutput('plotTemp')))
                           ),
                  tabPanel(title = "Pressure",
                           fluidRow(
                             box(width = 7, status = 'info', solidHeader = T, DTOutput('press')),
                             box(width = 5, status = 'info', solidHeader = T,
-                                uiOutput('selectEvent'),
-                                dygraphOutput('plotPress')))
+                                dygraphOutput('plotPress'), title = 'Pressure difference per event plot')
+                            )
                           )
                )
 )
