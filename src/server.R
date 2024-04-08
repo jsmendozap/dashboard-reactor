@@ -64,11 +64,14 @@ server <- function(input, output) {
   output$norm <- renderPlotly({
     
     plot <- bd() %>% 
-      summarise(time = date_time[1:(nrow(.) - input$lag)], y = norm_deriv(normoliter_out, input$lag)) %>%
+      transmute(date_time, deriv = norm_deriv(normoliter_out)) %>% 
+      group_by(group = rep(row_number(), each = 5, length.out = n())) %>%
+      summarise(time = mean(date_time), 
+                value = mean(deriv, na.rm = T) %>% round(3)) %>% 
       ggplot() +
-        geom_line(aes(x = time, y = y), linewidth = 0.2) +
-        labs(x = "Time", y = "Normalized milimeters") +
-        theme_bw()
+      geom_line(aes(x = time, y = value), linewidth = 0.2) +
+      labs(x = "Time", y = "Normalized milimeters rate") +
+      theme_bw()
       
     ggplotly(plot)
   })

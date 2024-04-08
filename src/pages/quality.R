@@ -11,8 +11,6 @@ quality <- tabItem(tabName = 'quality',
                                 status = 'info',
                                 solidHeader = T,
                                 width = 5,
-                                sliderInput('lag', label = 'Choose the number of points to derivate',
-                                            min = 1, max = 50, value = 5),
                                 plotlyOutput('norm')
                             )
                             )

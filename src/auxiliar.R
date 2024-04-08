@@ -38,7 +38,7 @@ assign_event <- function(fic, val){
 
 ### Processing Normolite column to plot ----------------------------------------
 
-norm_deriv <- function(col, lag){
+norm_deriv <- function(col){
   index <- which(diff(col) < -1)
   new <- col[1:index[1]]
   
@@ -51,8 +51,7 @@ norm_deriv <- function(col, lag){
     }
     new <- c(new, aux)
   }
-  
-  diff(new, lag = lag)/lag
+  c(diff(new, lag = 5)/5, rep(NA, 5))
 }
 
 ### Mode -----------------------------------------------------------------------
