@@ -10,7 +10,7 @@ log <- tabItem(tabName = 'log',
                      status = "info",
                      solidHeader = T,
                      width = 5,
-                     selectInput(inputId = 'var', label = 'Select variable to print',
+                     selectInput(inputId = 'var', label = 'Select variable',
                                  choices = c("Air flow" = "fi_110",
                                              "CO2 flow" = "fi_120",
                                              "Argon/Propane flow" = "fi_130",
@@ -19,7 +19,14 @@ log <- tabItem(tabName = 'log',
                                              "Measured temp" = "tic_300_pv",
                                              "Setted temp" = "tic_300_sp")),
                      div(id = 'legend', style = "margin-left: 5px"),
-                     dygraphOutput("dygraph", height = '55vh')
+                     dygraphOutput("dygraph", height = '45vh'),
+                     br(),
+                     uiOutput("var2"),
+                     uiOutput("legend2"),
+                     uiOutput("dygraph2"),
+                     br(),
+                     actionButton('addPlot',  'Add plot', icon('plus'),
+                                  status = 'info', outline = T)
                  )
                )            
         )

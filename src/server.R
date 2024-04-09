@@ -8,26 +8,36 @@ server <- function(input, output) {
   
   selected <- reactive({ input$var })
   
-  output$dygraph <- renderDygraph({
-    plot <- dygraph(bd() %>% select(1, selected())) %>%
-      dySeries(selected()) %>%
-      dyRangeSelector() %>%
-      dyOptions(useDataTimezone = TRUE) %>%
-      dyCSS("dygraph.css") %>%
-      dyLegend(labelsDiv = 'legend')
-    
-    if(!is.null(input$log_rows_selected)){
-      time <- bd() %>% 
-        filter(event == input$log_rows_selected) %>%
-        slice(1, n()) %>%
-        pull(date_time)
-      
-      plot %>% dyShading(from = time[1], to = time[2], color = "#C1BEE1") 
-      
-    } else {
-      plot
-    }
+  output$dygraph <- renderDygraph({ 
+    renderdy(bd(), selected(), input, 'legend') 
   })
+  
+  observeEvent(input$addPlot, {
+    output$var2 <- renderUI({
+      selectInput(inputId = 'var2', label = 'Select variable',
+                  choices = c("Air flow" = "fi_110",
+                              "CO2 flow" = "fi_120",
+                              "Argon/Propane flow" = "fi_130",
+                              "Nitrogen flow" = "fi_140",
+                              "Setted pressure" = "p_set",
+                              "Measured temp" = "tic_300_pv",
+                              "Setted temp" = "tic_300_sp"))
+    })
+    
+    output$legend2 <- renderUI({
+      div(id = 'legend2plot', style = "margin-left: 5px")
+      })
+    
+    output$dygraph2 <- renderUI({
+      dygraphOutput('dygraph2plot')
+    })
+  })
+  
+  selected2 <- reactive({ input$var2 })
+  
+  output$dygraph2plot <- renderDygraph({
+    renderdy(bd(), selected2(), input, 'legend2plot') 
+    })
   
   output$log <- renderDT(bd() %>%
                           slice(1, .by = event) %>%

@@ -1,3 +1,26 @@
+### Render dygraph -------------------------------------------------------------
+
+renderdy <- function(bd, selected, input, legend) {
+  plot <- dygraph(bd %>% select(1, selected), group = 'log') %>%
+    dySeries(selected) %>%
+    dyRangeSelector() %>%
+    dyOptions(useDataTimezone = TRUE) %>%
+    dyCSS("dygraph.css") %>%
+    dyLegend(labelsDiv = legend)
+  
+  if(!is.null(input$log_rows_selected)){
+    time <- bd %>% 
+      filter(event == input$log_rows_selected) %>%
+      slice(1, n()) %>%
+      pull(date_time)
+    
+    plot %>% dyShading(from = time[1], to = time[2], color = "#C1BEE1") 
+    
+  } else {
+    plot
+  }
+}
+
 ### Split and label events in file ---------------------------------------------
 
 assign_event <- function(fic, val){
@@ -66,11 +89,11 @@ mode <- function(x){
 load_file <- function(file){
   read_excel(file) %>% 
     janitor::clean_names() %>% 
-    select(1:11, 13:17, 25:26) %>%
-    mutate(date_time = dmy_hms(date_time),
+    filter(fic_110 != '???') %>%
+    mutate(date_time = dmy_hms(date_time), across(2:ncol(.), as.numeric), 
            across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
     filter(row_number() >= detect_index(fic_140, \(x) x == 100)) %>% 
-    rename('p_set' = 12) %>% 
+    rename(p_set = pressure_sp_history_out) %>% 
     group_by(event = assign_event(fic_140, rswitch_val)) %>%
     mutate(n = pretty_sec(n() * 60)) %>%
     ungroup() %>%
@@ -90,4 +113,5 @@ load_file <- function(file){
     mutate(name = str_glue("R1-{round(r1)} R2-{round(r2)} T-{temp} P-{p_set}")) %>%
     ungroup() 
 }
+
   
