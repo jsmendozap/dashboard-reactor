@@ -1,5 +1,3 @@
-source("src/auxiliar.R")
-
 server <- function(input, output) {
   bd <- reactive({
     req(input$file)

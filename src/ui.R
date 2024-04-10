@@ -1,6 +1,3 @@
-source("src/pages/log.R")
-source("src/pages/quality.R")
-
 menu <- list(
   fileInput("file", "Reactor file"),
   menuItem("Log summary", tabName = "log", icon = icon("clipboard-list", style = "margin-right: 5px")),

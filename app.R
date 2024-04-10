@@ -9,5 +9,5 @@ pacman::p_load(
 )
 
 cat("Running application\n")
-walk(.x = c("src/ui.R", "src/server.R"), .f = source)
+walk(.x = dir('src', '*.R', full.names = T, recursive = T), .f = source)
 shinyApp(ui, server)
