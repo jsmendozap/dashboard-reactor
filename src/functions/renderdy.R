@@ -1,7 +1,7 @@
 ### Render dygraph -------------------------------------------------------------
 
 renderdy <- function(bd, selected, input, legend) {
-  plot <- dygraph(bd %>% select(1, selected), group = 'log') %>%
+  plot <- dygraph(bd %>% select(1, all_of(selected)), group = 'log') %>%
     dySeries(selected) %>%
     dyRangeSelector() %>%
     dyOptions(useDataTimezone = TRUE) %>%
