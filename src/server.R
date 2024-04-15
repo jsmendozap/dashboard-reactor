@@ -4,44 +4,53 @@ server <- function(input, output) {
     load_file(input$file$datapath)
   })
   
-  selected <- reactive({ input$var })
+  ## Log -----------------------------------------------------------------------
   
-  output$dygraph <- renderDygraph({ 
-    renderdy(bd(), selected(), input, 'legend') 
-  })
-  
-  observeEvent(input$addPlot, {
-    output$var2 <- renderUI({
-      selectInput(inputId = 'var2', label = 'Select variable',
-                  choices = c("Air flow" = "fi_110",
-                              "CO2 flow" = "fi_120",
-                              "Argon/Propane flow" = "fi_130",
-                              "Nitrogen flow" = "fi_140",
-                              "Setted pressure" = "p_set",
-                              "Measured temp" = "tic_300_pv",
-                              "Setted temp" = "tic_300_sp"))
-    })
-    
-    output$legend2 <- renderUI({
-      div(id = 'legend2plot', style = "margin-left: 5px")
-      })
-    
-    output$dygraph2 <- renderUI({
-      dygraphOutput('dygraph2plot')
-    })
-  })
-  
+  selected1 <- reactive({ input$var })
   selected2 <- reactive({ input$var2 })
   
-  output$dygraph2plot <- renderDygraph({
-    renderdy(bd(), selected2(), input, 'legend2plot') 
+  output$dygraph <- renderDygraph({ 
+    renderdy(bd(), selected1(), input, 'legend') 
+  })
+  
+  output$dygraph2 <- renderDygraph({
+    renderdy(bd(), selected2(), input, 'legend2') 
     })
   
-  output$log <- renderDT(bd() %>%
-                          slice(1, .by = event) %>%
-                          select(date_time, name, n) %>%
-                          rename('Date' = 1, 'Event' = 2, 'Duration' = 3),
-                         selection = 'single')
+  output$log <- renderDT({
+    bd() %>%
+      slice(1, .by = event) %>%
+      select(date_time, name, n) %>%
+      rename('Date' = 1, 'Event' = 2, 'Duration' = 3) %>%
+      datatable(options = list(pageLength = 5), selection = 'single')})
+  
+  output$valve <- renderText({
+    req(input$log_rows_selected)
+    
+    pos <- bd() %>%
+      slice_head(n = 1, by = event) %>%
+      pull(rswitch_val)
+    
+    paste('Valve position:', pos[input$log_rows_selected])
+  })
+  
+  output$fi_110 <- renderValueBox({
+    reactor_values(bd(), 'fi_110', 'Air', input)
+  })
+  
+  output$fi_120 <- renderValueBox({
+    reactor_values(bd(), 'fi_120', 'Carbon dioxide', input)
+  })
+  
+  output$fi_130 <- renderValueBox({
+    reactor_values(bd(), 'fi_130', 'Argon / Propane', input)
+  })
+  
+  output$fi_140 <- renderValueBox({
+    reactor_values(bd(), 'fi_140', 'Nitrogen', input)
+  })
+  
+  ## Quality control -----------------------------------------------------------
   
   output$flow <- renderDT(bd() %>% 
                             summarise(across(.cols = c(2, 4, 6, 8), .fn = \(x) round(sum(x)/n(), 1)),
@@ -71,15 +80,25 @@ server <- function(input, output) {
   
   output$norm <- renderPlotly({
     
-    plot <- bd() %>% 
-      transmute(date_time, deriv = norm_deriv(normoliter_out)) %>% 
-      group_by(group = rep(row_number(), each = 5, length.out = n())) %>%
-      summarise(time = mean(date_time), 
-                value = mean(deriv, na.rm = T) %>% round(3)) %>% 
-      ggplot() +
-      geom_line(aes(x = time, y = value), linewidth = 0.2) +
-      labs(x = "Time", y = "Normalized milimeters rate") +
-      theme_bw()
+    plot <- tryCatch(expr = {
+      
+      bd() %>% 
+        transmute(date_time, deriv = norm_deriv(normoliter_out)) %>% 
+        group_by(group = rep(row_number(), each = 5, length.out = n())) %>%
+        summarise(time = mean(date_time), 
+                  value = mean(deriv, na.rm = T) %>% round(3)) %>% 
+        ggplot() +
+        geom_line(aes(x = time, y = value), linewidth = 0.2) +
+        labs(x = "Time", y = "Normalized milimeters rate") +
+        theme_bw()
+      
+    }, error = \(e) {
+      ggplot(bd()) +
+        geom_line(aes(x = date_time, y = normoliter_out)) +
+        labs(x = "Time", y = "Normalized milimeters",
+             title = 'Flow rate not possible') +
+        theme_bw()
+    })
       
     ggplotly(plot)
   })

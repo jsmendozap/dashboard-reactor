@@ -13,5 +13,5 @@ ui <- dashboardPage(
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(log, quality))
+  dashboardBody(tabItems(log, quality), tags$head(includeCSS("www/custom.css")))
 )

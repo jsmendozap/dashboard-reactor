@@ -2,10 +2,7 @@
 
 assign_event <- function(air, co2, ar, n2, val){
   event_count <- rep(NA, length(n2))
-  
   event <- 0
-  first_count <- F
-  second_count <- F
   
   for (i in 1:length(n2)) {
     
