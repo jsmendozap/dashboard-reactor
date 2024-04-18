@@ -1,7 +1,17 @@
 menu <- list(
-  fileInput("file", "Reactor file"),
+  br(),
+  accordion(
+    id = "files",
+    accordionItem(
+      title = "Files",
+      collapsed = T,
+      fileInput("reactor", "Reactor file"),
+      fileInput("gc", "GC file"),
+    )
+  ),
   menuItem("Log summary", tabName = "log", icon = icon("clipboard-list", style = "margin-right: 5px")),
-  menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px"))
+  menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
+  menuItem("Composition and rates", tabName = "composition", icon = icon("calculator", style = "margin-right: 5px"))
 )
 
 ui <- dashboardPage(
@@ -13,5 +23,6 @@ ui <- dashboardPage(
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(log, quality), tags$head(includeCSS("www/custom.css")))
+  dashboardBody(tabItems(log, quality, composition),
+                tags$head(includeCSS("www/custom.css")))
 )

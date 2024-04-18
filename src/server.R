@@ -1,7 +1,7 @@
 server <- function(input, output) {
   bd <- reactive({
-    req(input$file)
-    load_file(input$file$datapath)
+    req(input$reactor)
+    load_file(input$reactor$datapath)
   })
   
   ## Log -----------------------------------------------------------------------
@@ -159,4 +159,39 @@ server <- function(input, output) {
       dyLegend(labelsDiv = 'legend')
   })
   
+
+## Chemometrics ----------------------------------------------------------------
+
+  gc <- reactive({
+    req(input$gc)
+    load_gc(path = input$gc$datapath, bd = bd())
+  })
+  
+  output$UIcompunds <- renderUI({
+    comp <- colnames(gc())[-c(1:4)] %>%
+      str_replace_all('_', ' ') %>% 
+      str_to_title()
+    
+    selectInput(inputId = 'compounds',
+                label = 'Select compounds to plot',
+                choices = comp, selected = comp, multiple = T)
+  })
+  
+  output$composition <- renderPlotly({
+    
+    plot <- gc() %>%
+      select(-injection) %>%
+      pivot_longer(cols = 4:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+      mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
+      filter(Compound %in% input$compounds) %>%
+      ggplot(aes(x = time, y = value, fill = Compound)) +
+      geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
+      labs(x = "Reaction time", y = "Composition") +
+      facet_wrap(~event, scales = 'free') +
+      theme_bw() 
+  
+    ggplotly(plot, dynamicTicks = T, tooltip = "fill")
+      
+  })
+
 }
