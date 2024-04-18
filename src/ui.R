@@ -11,7 +11,7 @@ menu <- list(
   ),
   menuItem("Log summary", tabName = "log", icon = icon("clipboard-list", style = "margin-right: 5px")),
   menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
-  menuItem("Composition and rates", tabName = "composition", icon = icon("calculator", style = "margin-right: 5px"))
+  menuItem("Composition and rates", tabName = "composition", icon = icon("chart-pie", style = "margin-right: 5px"))
 )
 
 ui <- dashboardPage(
