@@ -181,20 +181,34 @@ server <- function(input, output) {
   
   output$xgc <- renderUI({
     selectInput(inputId = 'gc_xaxis', label = 'Select x axis',
-                choices = c("Temperature" = "te_310",
+                choices = c("Temperature" = "tic_300_pv",
                             "Time" = "time"))
+  })
+  
+  output$gc_events <- renderUI({
+    
+    selected <- gc() %>% 
+      filter(n() > 1, .by = event) %>%
+      pull(event) %>% unique()
+    
+    pickerInput(
+      inputId = "gc_event", label = "Select events to plot", 
+      choices = unique(gc()$event), multiple = TRUE, selected = selected,
+      options = list(`actions-box` = TRUE, `live-search` = TRUE)
+    )
   })
   
   output$composition <- renderPlotly({
     
     plot <- gc() %>%
       select(-injection) %>%
-      pivot_longer(cols = 4:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+      pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
       mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
-      filter(Compound %in% input$compounds) %>%
-      ggplot(aes(x = time, y = value, fill = Compound)) +
+      filter(Compound %in% input$compounds & event %in% input$gc_event) %>%
+      ggplot(aes(x = .data[[input$gc_xaxis]], y = value, fill = Compound)) +
       geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
-      labs(x = "Reaction time", y = "Composition") +
+      labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time'),
+           y = "Composition") +
       facet_wrap(~event, scales = 'free', ncol = 2) +
       theme_bw() 
   
@@ -209,7 +223,7 @@ server <- function(input, output) {
   
   output$xms <- renderUI({
     selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
-                choices = c("Temperature" = "te_310",
+                choices = c("Temperature" = "tic_300_pv",
                             "Time" = "time_absolute_date_time"))
   })
   
@@ -238,7 +252,7 @@ server <- function(input, output) {
       transmute(time = .data[[input$ms_xaxis]],
                 amu = smooth.spline(filter(ms(), time_absolute_date_time >= ymd_hms(input$mstime)) %>%
                                       select(input$ms_yaxis), spar = input$smooth)$y) %>%
-      dygraph(xlab = ifelse(input$ms_xaxis == 'te_310',
+      dygraph(xlab = ifelse(input$ms_xaxis == 'tic_300_pv',
                             'Temperature (°C)', 'Time')) %>%
       dySeries('amu') %>%
       dyRangeSelector() %>%

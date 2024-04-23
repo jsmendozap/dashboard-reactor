@@ -5,6 +5,7 @@ raw_data <- tabItem(tabName = "raw-data",
                                   fluidRow(
                                     column(width = 3,
                                            uiOutput('UIcompunds'),
+                                           uiOutput('gc_events'),
                                            uiOutput('xgc')),
                                     column(width = 9, 
                                            plotlyOutput('composition', height = '150vh')))

@@ -3,10 +3,9 @@ load_ms <- function(path, bd){
     mutate(row = row_number()) %>%
     reframe(date_time = seq(date_time, as.POSIXct(date_time) + 59, by = '1 sec'),
             .by = row) %>% 
-    left_join(bd %>% select(date_time, te_310, te_320),
-              by = join_by(date_time)) %>%
-    mutate(across(.cols = c(te_310, te_320), .fns = ~na.approx(.x, na.rm = F))) %>%
-    fill(te_310, te_320) 
+    left_join(select(bd, date_time, tic_300_pv), by = join_by(date_time)) %>%
+    mutate(tic_300_pv = na.approx(tic_300_pv, na.rm = F)) %>%
+    fill(tic_300_pv) 
   
   read_delim(path, skip = 377) %>% 
     janitor::clean_names() %>%

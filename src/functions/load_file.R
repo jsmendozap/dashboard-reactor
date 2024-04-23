@@ -15,9 +15,7 @@ load_file <- function(file){
            across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>%
     rename(p_set = pressure_sp_history_out) %>% 
     group_by(event = assign_event(fic_110, fic_120, fic_130, fic_140, rswitch_val)) %>%
-    filter(n() > 10) %>%
-    mutate(n = pretty_sec(n() * 60),
-           event = cur_group_id()) %>%
+    mutate(n = pretty_sec(n() * 60)) %>%
     ungroup() %>%
     rowwise() %>%
     mutate(
