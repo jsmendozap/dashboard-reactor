@@ -21,7 +21,7 @@ server <- function(input, output) {
     bd() %>%
       slice(1, .by = event) %>%
       select(date_time, name, n) %>%
-      rename('Date' = 1, 'Event' = 2, 'Duration' = 3) %>%
+      rename('Start time' = 1, 'Event' = 2, 'Duration' = 3) %>%
       datatable(options = list(pageLength = 5), selection = 'single')})
   
   output$valve <- renderText({
@@ -160,7 +160,7 @@ server <- function(input, output) {
   })
   
 
-## Chemometrics ----------------------------------------------------------------
+## Raw data --------------------------------------------------------------------
 
   gc <- reactive({
     req(input$gc)
@@ -172,9 +172,17 @@ server <- function(input, output) {
       str_replace_all('_', ' ') %>% 
       str_to_title()
     
-    selectInput(inputId = 'compounds',
-                label = 'Select compounds to plot',
-                choices = comp, selected = comp, multiple = T)
+    pickerInput(
+      inputId = "compounds", label = "Select compounds to plot", 
+      choices = comp, multiple = TRUE, selected = comp,
+      options = list(`actions-box` = TRUE, `live-search` = TRUE),
+    )
+  })
+  
+  output$xgc <- renderUI({
+    selectInput(inputId = 'gc_xaxis', label = 'Select x axis',
+                choices = c("Temperature" = "te_310",
+                            "Time" = "time"))
   })
   
   output$composition <- renderPlotly({
@@ -187,11 +195,58 @@ server <- function(input, output) {
       ggplot(aes(x = time, y = value, fill = Compound)) +
       geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
       labs(x = "Reaction time", y = "Composition") +
-      facet_wrap(~event, scales = 'free') +
+      facet_wrap(~event, scales = 'free', ncol = 2) +
       theme_bw() 
   
     ggplotly(plot, dynamicTicks = T, tooltip = "fill")
       
   })
 
+  ms <- reactive({
+    req(input$ms)
+    load_ms(path = input$ms$datapath, bd = bd())
+  })
+  
+  output$xms <- renderUI({
+    selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
+                choices = c("Temperature" = "te_310",
+                            "Time" = "time_absolute_date_time"))
+  })
+  
+  output$yms <- renderUI({
+    pickerInput(
+      inputId = "ms_yaxis", label = "Select compound:",
+      choices = ms() %>% select(contains('_amu_')) %>% colnames(),
+      options = list(`live-search` = TRUE)
+    )
+  })
+  
+  output$startms <- renderUI({
+    airDatepickerInput('mstime', label = 'Start time',
+                       value = ms()$time_absolute_date_time[1],
+                       timepickerOpts = list("timeFormat" = "HH:mm"),
+                       timepicker = T)
+  })
+  
+  output$msplot <- renderDygraph({
+    req(input$ms_xaxis)
+    req(input$ms_yaxis)
+    
+    ms() %>%
+      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+      select(input$ms_xaxis, input$ms_yaxis) %>%
+      transmute(time = .data[[input$ms_xaxis]],
+                amu = smooth.spline(filter(ms(), time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+                                      select(input$ms_yaxis), spar = input$smooth)$y) %>%
+      dygraph(xlab = ifelse(input$ms_xaxis == 'te_310',
+                            'Temperature (°C)', 'Time')) %>%
+      dySeries('amu') %>%
+      dyRangeSelector() %>%
+      dyOptions(useDataTimezone = TRUE) %>%
+      dyLegend(width = 450)
+      
+  })
+  
+  observeEvent(input$msplot_date_window, {print(input$msplot_date_window)})
+  
 }
