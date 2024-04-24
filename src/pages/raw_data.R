@@ -8,7 +8,8 @@ raw_data <- tabItem(tabName = "raw-data",
                                            uiOutput('gc_events'),
                                            uiOutput('xgc')),
                                     column(width = 9, 
-                                           plotlyOutput('composition', height = '150vh')))
+                                           plotlyOutput('composition', height = '100vh'))
+                                    )
                                   ),
                          tabPanel(title = "MS signals",
                                   fluidRow(
@@ -19,8 +20,22 @@ raw_data <- tabItem(tabName = "raw-data",
                                                        min = 0, max = 1, value = 0),
                                            uiOutput("startms")
                                            ),
-                                    column(width = 9,
-                                           dygraphOutput('msplot', width = "95%", height = '500px')))
+                                    tabBox(
+                                      id = "tabset3", height = "100%", width = 9,
+                                      tabPanel(title = "General", 
+                                               fluidRow(
+                                                column(width = 12,
+                                                       dygraphOutput('msplot_gen', height = '500px'))
+                                                )
+                                               ),
+                                      tabPanel(title = "Events", 
+                                               fluidRow(
+                                                 column(width = 12,
+                                                        plotlyOutput('msplot', height = '100vh'))
+                                               )
+                                      )
+                                      )
+                                    )
                                 )
                          )
                        )

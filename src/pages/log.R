@@ -15,23 +15,32 @@ log <- tabItem(tabName = 'log',
                        solidHeader = T,
                        width = 12,
                        DTOutput('log'))),
-                 box(title = "Reactor's inflow",
-                     status = 'info',
-                     solidHeader = T,
-                     width = 4,
-                     textOutput('valve'),
-                     br(),
-                     fluidRow(
-                       column(
-                         width = 6,
-                         valueBoxOutput("fi_110", width = 12),
-                         valueBoxOutput("fi_120", width = 12)),
-                       column(
-                         width = 6,
-                         valueBoxOutput("fi_130", width = 12),
-                         valueBoxOutput("fi_140", width = 12))
-                     )
-                    )
+                 column(
+                   width = 4,
+                   box(title = 'Filter events by duration', 
+                       width = 12, solidHeader = T, status = 'info',
+                       sliderInput(inputId = 'log_events',
+                                   label = "Event's minimum duration (min)",
+                                   min = 0, max = 60, value = 0)
+                       ),
+                   box(title = "Reactor's inflow",
+                       status = 'info',
+                       solidHeader = T,
+                       width = 12,
+                       textOutput('valve'),
+                       br(),
+                       fluidRow(
+                         column(
+                           width = 6,
+                           valueBoxOutput("fi_110", width = 12),
+                           valueBoxOutput("fi_120", width = 12)),
+                         column(
+                           width = 6,
+                           valueBoxOutput("fi_130", width = 12),
+                           valueBoxOutput("fi_140", width = 12))
+                       )
+                   )
+                 )
                  ),
                fluidRow(
                  column(

@@ -1,7 +1,11 @@
 server <- function(input, output) {
-  bd <- reactive({
+  df <- reactive({
     req(input$reactor)
     load_file(input$reactor$datapath)
+  })
+  
+  bd <- reactive({
+    df() %>% filter(n >= input$log_events)
   })
   
   ## Log -----------------------------------------------------------------------
@@ -20,9 +24,10 @@ server <- function(input, output) {
   output$log <- renderDT({
     bd() %>%
       slice(1, .by = event) %>%
-      select(date_time, name, n) %>%
-      rename('Start time' = 1, 'Event' = 2, 'Duration' = 3) %>%
-      datatable(options = list(pageLength = 5), selection = 'single')})
+      select(event, date_time, name, time_duration) %>%
+      rename('Event' = 1, 'Start time' = 2, 'Event name' = 3, 'Duration' = 4) %>%
+      datatable(options = list(pageLength = 10), selection = 'single')
+    })
   
   output$valve <- renderText({
     req(input$log_rows_selected)
@@ -116,15 +121,30 @@ server <- function(input, output) {
       mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
       rename("Event" = 1, "Avg. measured" = 3, "Avg. setted" = 4,
              "Rate of change" = 2, "Avg. Reactor 1" = 5, "Avg. Reactor 2" = 6) %>%
-      datatable(selection = 'single')
+      datatable(selection = 'single', options = list(pageLength = 5))
   })
   
   
   output$plotTemp <- renderPlotly({
     plot <- ggplot(bd()) +
-      geom_point(aes(x = tic_300_sp, y = tic_300_pv), size = 0.5) +
-      labs(x = "Setted temperature", y = "Measured temperature") +
-      theme_bw()
+      geom_point(aes(x = tic_300_sp, y = tic_300_pv), size = 0.2) +
+      labs(x = "Setted temperature (°C)", y = "Measured temperature (°C)",
+           title = 'Setted vs measured') +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
+    
+    ggplotly(plot)
+  })
+  
+  output$diffTemp <- renderPlotly({
+    plot <- bd() %>%
+              mutate(difference = tic_300_pv - te_320) %>%
+              ggplot() +
+              geom_line(aes(x = date_time, y = difference), size = 0.2) +
+              labs(x = "Time", y = "differences in temperature",
+                   title = "Temperature's difference plot") +
+              theme_bw() +
+              theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
     
     ggplotly(plot)
   })
@@ -181,8 +201,8 @@ server <- function(input, output) {
   
   output$xgc <- renderUI({
     selectInput(inputId = 'gc_xaxis', label = 'Select x axis',
-                choices = c("Temperature" = "tic_300_pv",
-                            "Time" = "time"))
+                choices = c("Time" = "time",
+                            "Temperature" = "tic_300_pv"))
   })
   
   output$gc_events <- renderUI({
@@ -207,7 +227,7 @@ server <- function(input, output) {
       filter(Compound %in% input$compounds & event %in% input$gc_event) %>%
       ggplot(aes(x = .data[[input$gc_xaxis]], y = value, fill = Compound)) +
       geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
-      labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time'),
+      labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
            y = "Composition") +
       facet_wrap(~event, scales = 'free', ncol = 2) +
       theme_bw() 
@@ -223,8 +243,8 @@ server <- function(input, output) {
   
   output$xms <- renderUI({
     selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
-                choices = c("Temperature" = "tic_300_pv",
-                            "Time" = "time_absolute_date_time"))
+                choices = c("Time" = "time",
+                            "Temperature" = "tic_300_pv"))
   })
   
   output$yms <- renderUI({
@@ -242,23 +262,40 @@ server <- function(input, output) {
                        timepicker = T)
   })
   
-  output$msplot <- renderDygraph({
-    req(input$ms_xaxis)
-    req(input$ms_yaxis)
+  amu <- reactive({
+    ms() %>%
+      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+      pull(input$ms_yaxis) %>%
+    smooth.spline(spar = input$smooth)
+  })
+  
+  output$msplot_gen <- renderDygraph({
     
     ms() %>%
       filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
-      select(input$ms_xaxis, input$ms_yaxis) %>%
-      transmute(time = .data[[input$ms_xaxis]],
-                amu = smooth.spline(filter(ms(), time_absolute_date_time >= ymd_hms(input$mstime)) %>%
-                                      select(input$ms_yaxis), spar = input$smooth)$y) %>%
+      transmute(time_absolute_date_time, amu = amu()$y) %>%
       dygraph(xlab = ifelse(input$ms_xaxis == 'tic_300_pv',
-                            'Temperature (°C)', 'Time')) %>%
+                            'Temperature (°C)', 'Reaction Time (min)')) %>%
       dySeries('amu') %>%
       dyRangeSelector() %>%
       dyOptions(useDataTimezone = TRUE) %>%
       dyLegend(width = 450)
-      
+  })
+  
+  output$msplot <- renderPlotly({
+    plot <- ms() %>%
+      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+      select(time, event, tic_300_pv) %>%
+      mutate(amu = amu()$y) %>%
+      drop_na(event) %>%
+      ggplot(aes(x = .data[[input$ms_xaxis]], y = amu)) +
+      geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
+      labs(x = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
+           y = "Signal detected (a.m.u)") +
+      facet_wrap(~event, scales = 'free', ncol = 2) +
+      theme_bw() 
+    
+    ggplotly(plot, dynamicTicks = T, tooltip = NULL)
   })
   
   observeEvent(input$msplot_date_window, {print(input$msplot_date_window)})
