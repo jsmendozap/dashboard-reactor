@@ -18,14 +18,16 @@ raw_data <- tabItem(tabName = "raw-data",
                                            uiOutput('yms'),
                                            sliderInput('smooth', 'Smoothing level:',
                                                        min = 0, max = 1, value = 0),
-                                           uiOutput("startms")
+                                           uiOutput("startms"),
+                                           uiOutput("ms_int"),
+                                           plotOutput('int_plot', height = '250px')
                                            ),
                                     tabBox(
                                       id = "tabset3", height = "100%", width = 9,
                                       tabPanel(title = "General", 
                                                fluidRow(
                                                 column(width = 12,
-                                                       dygraphOutput('msplot_gen', height = '500px'))
+                                                       dygraphOutput('msplot_gen', height = '450px'))
                                                 )
                                                ),
                                       tabPanel(title = "Events", 
