@@ -13,7 +13,7 @@ load_gc <- function(path, bd){
     left_join(select(bd, date_time, tic_300_pv), by = join_by(closest(inject_time >= date_time))) %>%
     fill(event) %>% 
     drop_na(event) %>%
-    mutate(time = difftime(inject_time, start, units = 'mins')) %>%
+    mutate(time = difftime(inject_time, start, units = 'mins') %>% as.numeric) %>%
     select(inject_time, event, time, tic_300_pv, !where(is.logical), -c(x3, date_time, start, end)) %>% 
     mutate(across(.cols = 6:ncol(.), ~replace_na(.x, 0)))
 }

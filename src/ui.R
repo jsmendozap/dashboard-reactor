@@ -10,6 +10,9 @@ menu <- list(
       fileInput("ms", "MS file"),
     )
   ),
+  sliderInput(inputId = 'log_events',
+              label = "Event's minimum duration",
+              min = 0, max = 60, value = 0),
   menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
   menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
   menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px"))

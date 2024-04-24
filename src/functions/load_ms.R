@@ -20,6 +20,7 @@ load_ms <- function(path, bd){
     left_join(data, by = join_by(closest(time_absolute_date_time >= date_time))) %>%
     rename_with(.fn = ~substr(.x, 2, nchar(.)), .cols = contains("_amu_")) %>%
     fill(event, .direction = 'up') %>%
-    mutate(time = difftime(time_absolute_date_time, start, units = 'mins')) %>%
-    select(-c(row, date_time, start, end))
+    mutate(time = difftime(time_absolute_date_time, start, units = 'mins') %>% as.numeric) %>%
+    select(-c(row, date_time, start, end)) %>%
+    relocate(time_absolute_date_time, time, event, tic_300_pv)
 }

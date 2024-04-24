@@ -17,14 +17,8 @@ quality <- tabItem(tabName = 'quality',
                           ),
                  tabPanel(title = "Temperature",
                           fluidRow(
-                            column(
-                              width = 8,
-                              box(width = 12, status = 'info', solidHeader = T, DTOutput('temp'))
-                            ),
-                            column(width = 4, 
-                                   plotlyOutput('plotTemp'),
-                                   br(),
-                                   plotlyOutput('diffTemp')) 
+                            box(title = 'Summary', width = 12, status = 'info', solidHeader = T, DTOutput('temp')),
+                            plotlyOutput('diffTemp', height = '100vh')
                             )
                           ),
                  tabPanel(title = "Pressure",
