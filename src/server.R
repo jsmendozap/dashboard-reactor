@@ -251,7 +251,7 @@ server <- function(input, output) {
   })
   
   output$startms <- renderUI({
-    airDatepickerInput('mstime', label = 'Start time',
+    airDatepickerInput('mstime', label = 'Start time:',
                        value = ms()$time_absolute_date_time[1],
                        timepickerOpts = list("timeFormat" = "HH:mm"),
                        timepicker = T)
@@ -293,6 +293,37 @@ server <- function(input, output) {
     ggplotly(plot, dynamicTicks = T, tooltip = 'color')
   })
   
-  observeEvent(input$msplot_date_window, {print(input$msplot_date_window)})
+  fit <- reactive({
+    req(input$msplot_gen_date_window)
+    req(input$ms_yaxis)
+    
+    range <- input$msplot_gen_date_window
+    
+    ms() %>%
+      filter(between(time_absolute_date_time, ymd_hms(range[1]), ymd_hms(range[2]))) %>%
+      rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) %>%
+      pull(.data[[input$ms_yaxis[1]]]) %>%
+      smooth.spline(spar = input$smooth)
+  })
+  
+  output$ms_int <- renderUI({
+    req(input$msplot_gen_date_window)
+    
+    smooth <- \(x) predict(fit(), x)$y
+    value <- integrate(smooth, 1, length(fit()$x))$value
+    
+    div(
+      span('Integral value: ', style = 'font-weight: bold'),
+      span(paste(pretty_num(value), 'u.m.a'))
+    )
+  })
+  
+  output$int_plot <- renderPlot({
+    req(input$msplot_gen_date_window)
+    
+    par(mar = c(5, 4, 2, 2))
+    plot(x = fit()$x, y = fit()$y, type = 'l', xaxs = 'i', 
+         bty = 'n', xlab = '', ylab = '')
+  })
   
 }
