@@ -1,7 +1,11 @@
 server <- function(input, output) {
-  bd <- reactive({
+  df <- reactive({
     req(input$reactor)
     load_file(input$reactor$datapath)
+  })
+  
+  bd <- reactive({
+    df() %>% filter(n >= input$log_events)
   })
   
   ## Log -----------------------------------------------------------------------
@@ -20,9 +24,10 @@ server <- function(input, output) {
   output$log <- renderDT({
     bd() %>%
       slice(1, .by = event) %>%
-      select(date_time, name, n) %>%
-      rename('Date' = 1, 'Event' = 2, 'Duration' = 3) %>%
-      datatable(options = list(pageLength = 5), selection = 'single')})
+      select(event, date_time, name, time_duration) %>%
+      rename('Event' = 1, 'Start time' = 2, 'Event name' = 3, 'Duration' = 4) %>%
+      datatable(options = list(pageLength = 5), selection = 'single')
+    })
   
   output$valve <- renderText({
     req(input$log_rows_selected)
@@ -116,15 +121,18 @@ server <- function(input, output) {
       mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
       rename("Event" = 1, "Avg. measured" = 3, "Avg. setted" = 4,
              "Rate of change" = 2, "Avg. Reactor 1" = 5, "Avg. Reactor 2" = 6) %>%
-      datatable(selection = 'single')
+      datatable(selection = 'single', options = list(pageLength = 5))
   })
   
-  
-  output$plotTemp <- renderPlotly({
-    plot <- ggplot(bd()) +
-      geom_point(aes(x = tic_300_sp, y = tic_300_pv), size = 0.5) +
-      labs(x = "Setted temperature", y = "Measured temperature") +
-      theme_bw()
+  output$diffTemp <- renderPlotly({
+    plot <- bd() %>%
+              mutate(difference = tic_300_pv - te_320) %>%
+              ggplot() +
+              geom_line(aes(x = date_time, y = difference), linewidth = 0.2) +
+              facet_wrap(~event, scales = 'free') +
+              labs(x = "Time", y = "Temperature differences") +
+              theme_bw() +
+              theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
     
     ggplotly(plot)
   })
@@ -160,7 +168,7 @@ server <- function(input, output) {
   })
   
 
-## Chemometrics ----------------------------------------------------------------
+## Raw data --------------------------------------------------------------------
 
   gc <- reactive({
     req(input$gc)
@@ -168,30 +176,123 @@ server <- function(input, output) {
   })
   
   output$UIcompunds <- renderUI({
-    comp <- colnames(gc())[-c(1:4)] %>%
+    comp <- colnames(gc())[-c(1:5)] %>%
       str_replace_all('_', ' ') %>% 
       str_to_title()
     
-    selectInput(inputId = 'compounds',
-                label = 'Select compounds to plot',
-                choices = comp, selected = comp, multiple = T)
+    pickerInput(
+      inputId = "compounds", label = "Select compounds to plot", 
+      choices = comp, multiple = TRUE, selected = comp,
+      options = list(`actions-box` = TRUE, `live-search` = TRUE),
+    )
+  })
+  
+  output$xgc <- renderUI({
+    selectInput(inputId = 'gc_xaxis', label = 'Select x axis',
+                choices = c("Time" = "time",
+                            "Temperature" = "tic_300_pv"))
+  })
+  
+  output$gc_events <- renderUI({
+    
+    selected <- gc() %>% 
+      filter(n() > 1, .by = event) %>%
+      pull(event) %>% unique()
+    
+    pickerInput(
+      inputId = "gc_event", label = "Select events to plot", 
+      choices = unique(gc()$event), multiple = TRUE, selected = selected,
+      options = list(`actions-box` = TRUE, `live-search` = TRUE)
+    )
   })
   
   output$composition <- renderPlotly({
+    req(input$gc_event)
     
     plot <- gc() %>%
       select(-injection) %>%
-      pivot_longer(cols = 4:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+      pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
       mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
-      filter(Compound %in% input$compounds) %>%
-      ggplot(aes(x = time, y = value, fill = Compound)) +
+      filter(Compound %in% input$compounds & event %in% input$gc_event) %>%
+      ggplot(aes(x = .data[[input$gc_xaxis]], y = value, fill = Compound)) +
       geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
-      labs(x = "Reaction time", y = "Composition") +
-      facet_wrap(~event, scales = 'free') +
+      labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
+           y = "Composition") +
+      facet_wrap(~event, scales = 'free', ncol = 2) +
       theme_bw() 
   
     ggplotly(plot, dynamicTicks = T, tooltip = "fill")
       
   })
 
+  ms <- reactive({
+    req(input$ms)
+    load_ms(path = input$ms$datapath, bd = bd())
+  })
+  
+  output$xms <- renderUI({
+    selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
+                choices = c("Time" = "time",
+                            "Temperature" = "tic_300_pv"))
+  })
+  
+  output$yms <- renderUI({
+    
+    choices <- ms() %>%
+      select(contains('_amu_')) %>%
+      colnames() %>%
+      str_replace_all('_', ' ')
+    
+    pickerInput(
+      inputId = "ms_yaxis", label = "Select compound:", multiple = T,
+      choices = choices, selected = choices[1],
+      options = list(`actions-box` = TRUE, `live-search` = TRUE)
+    )
+  })
+  
+  output$startms <- renderUI({
+    airDatepickerInput('mstime', label = 'Start time',
+                       value = ms()$time_absolute_date_time[1],
+                       timepickerOpts = list("timeFormat" = "HH:mm"),
+                       timepicker = T)
+  })
+  
+  output$msplot_gen <- renderDygraph({
+    req(input$ms_yaxis)
+    
+    ms() %>%
+      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+      rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) %>%
+      transmute(time_absolute_date_time, 
+                amu = smooth.spline(.[,input$ms_yaxis[1]], spar = input$smooth)$y) %>%
+      dygraph(xlab = ifelse(input$ms_xaxis == 'tic_300_pv',
+                            'Temperature (°C)', 'Reaction Time (min)')) %>%
+      dySeries('amu') %>%
+      dyRangeSelector() %>%
+      dyOptions(useDataTimezone = TRUE) %>%
+      dyLegend(width = 450)
+  })
+  
+  output$msplot <- renderPlotly({
+    req(input$ms_yaxis)
+    
+    plot <- ms() %>%
+      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+      pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+      mutate(value = smooth.spline(value, spar = input$smooth)$y, .by = Compound) %>%
+      mutate(Compound = str_replace_all(Compound, '_', ' ')) %>% 
+      filter(Compound %in% input$ms_yaxis) %>%
+      drop_na(event) %>%
+      ggplot(aes(x = .data[[input$ms_xaxis]], y = value, color = Compound)) +
+      geom_line() +
+      labs(x = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
+           y = "Signal detected (a.m.u)") +
+      facet_wrap(~event, scales = 'free', ncol = 2) +
+      theme_bw() 
+    
+    ggplotly(plot, dynamicTicks = T, tooltip = 'color')
+  })
+  
+  observeEvent(input$msplot_date_window, {print(input$msplot_date_window)})
+  
 }

@@ -1,0 +1,15 @@
+.react-datetime-picker {
+  box-shadow: none !important;
+}
+
+.react-calendar {
+  width: 250px !important;
+}
+
+.bootstrap-select{
+  border: 1px solid lightgray !important;
+}
+
+.bootstrap-select>.dropdown-toggle {
+  background-color: white !important;
+}

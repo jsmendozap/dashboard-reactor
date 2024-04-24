@@ -7,11 +7,15 @@ menu <- list(
       collapsed = T,
       fileInput("reactor", "Reactor file"),
       fileInput("gc", "GC file"),
+      fileInput("ms", "MS file"),
     )
   ),
-  menuItem("Log summary", tabName = "log", icon = icon("clipboard-list", style = "margin-right: 5px")),
+  sliderInput(inputId = 'log_events',
+              label = "Event's minimum duration",
+              min = 0, max = 60, value = 0),
+  menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
   menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
-  menuItem("Composition and rates", tabName = "composition", icon = icon("chart-pie", style = "margin-right: 5px"))
+  menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px"))
 )
 
 ui <- dashboardPage(
@@ -23,6 +27,6 @@ ui <- dashboardPage(
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(log, quality, composition),
+  dashboardBody(tabItems(log, quality, raw_data),
                 tags$head(includeCSS("www/custom.css")))
 )
