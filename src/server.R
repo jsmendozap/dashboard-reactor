@@ -1,3 +1,5 @@
+options(shiny.maxRequestSize=30*1024^2) 
+
 server <- function(input, output) {
   df <- reactive({
     req(input$reactor)
@@ -156,8 +158,12 @@ server <- function(input, output) {
     
     req(input$press_rows_selected)
     
+    selected <- slice_head(bd(), n = 1, by = event) %>%
+      filter(row_number() == input$press_rows_selected) %>%
+      pull(event)
+    
     bd() %>%
-      filter(event == input$press_rows_selected) %>%
+      filter(event == selected) %>%
       rowwise() %>%
       transmute(time = date_time, delta = mean(pt_310) - mean(pt_320)) %>%
       dygraph() %>%
@@ -313,16 +319,16 @@ server <- function(input, output) {
     value <- integrate(smooth, 1, length(fit()$x))$value
     
     div(
-      span('Integral value: ', style = 'font-weight: bold'),
-      span(paste(pretty_num(value), 'u.m.a'))
+      span('Integral value:', style = 'font-weight: bold'),
+      span(pretty_num(value), 'u.m.a')
     )
   })
   
   output$int_plot <- renderPlot({
     req(input$msplot_gen_date_window)
     
-    par(mar = c(5, 4, 2, 2))
-    plot(x = fit()$x, y = fit()$y, type = 'l', xaxs = 'i', 
+    par(mar = c(5, 4, 1.5, 2))
+    plot(x = fit()$x, y = fit()$y, type = 'l',
          bty = 'n', xlab = '', ylab = '')
   })
   
