@@ -15,7 +15,8 @@ menu <- list(
               min = 0, max = 60, value = 0),
   menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
   menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
-  menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px"))
+  menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px")),
+  menuItem("Chemometric", tabName = "chemometric", icon = icon("calculator", style = "margin-right: 5px"))
 )
 
 ui <- dashboardPage(
@@ -27,6 +28,7 @@ ui <- dashboardPage(
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(log, quality, raw_data),
-                tags$head(includeCSS("www/custom.css")))
+  dashboardBody(tabItems(log, quality, raw_data, chemometric),
+                tags$head(includeCSS("www/custom.css")),
+                reactable_extras_dependency())
 )

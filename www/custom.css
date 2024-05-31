@@ -13,3 +13,8 @@
 .bootstrap-select>.dropdown-toggle {
   background-color: white !important;
 }
+
+.dropdown-extra {
+  border: 0px;
+  background-color: white;
+}

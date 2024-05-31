@@ -363,4 +363,30 @@ server <- function(input, output) {
          bty = 'n', xlab = '', ylab = '')
   })
   
+## Chemometric -----------------------------------------------------------------
+
+  output$std <- renderReactable({
+    
+    opt <- c('Ramp', 'TOS', 'regeneration', 'CO-TPD', 'Propane-TPD', 'H2-TPR')
+    opt2 <- c('opt1', 'opt2')
+    
+    bd() %>%
+      slice_head(n = 1, by = event) %>%
+      select(event, name) %>%
+      mutate(nombre = list(opt), otro = list(opt2)) %>%
+      custom_reactable(selection = 'single', 
+                       columns = list(
+                         event = colDef(name = 'Event'),
+                         name = colDef(name = 'Event name', minWidth = 300),
+                         nombre = colDef(cell = dropdown_extra(id = 'dropdown',
+                                                              choices = opt,
+                                                              class = 'dropdown-extra'),
+                                         minWidth = 150),
+                         otro = colDef(cell = dropdown_extra(id = 'dropdown2', opt2, class = 'dropdown-extra'), 
+                                       minWidth = 150)
+                       ), style = "border-radius: '3px'"
+                      )
+  })
+  
+  observeEvent(input$dropdown, print(input$dropdown))
 }

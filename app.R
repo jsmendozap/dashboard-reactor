@@ -4,8 +4,8 @@ cat("Verifying and installing required packages\n")
 if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'http://cran.us.r-project.org') }
 
 pacman::p_load(
-    tidyverse, readxl, janitor, dygraphs, shinyWidgets,
-    bs4Dash, shiny, prettyunits, plotly, zoo, reactable 
+    tidyverse, readxl, janitor, dygraphs, shinyWidgets, bs4Dash, shiny,
+    prettyunits, plotly, zoo, reactable, reactable.extras 
 )
 
 cat("Running application\n")
