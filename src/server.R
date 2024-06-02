@@ -237,9 +237,14 @@ server <- function(input, output) {
   })
   
   output$xms <- renderUI({
-    selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
-                choices = c("Time" = "time",
-                            "Temperature" = "tic_300_pv"))
+    if(input$tabset3 == 'General'){
+      selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
+                  choices = c("Time" = "time"))  
+    } else {
+      selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
+                  choices = c("Time" = "time",
+                              "Temperature" = "tic_300_pv"))  
+    }
   })
   
   output$yms <- renderUI({
@@ -266,17 +271,21 @@ server <- function(input, output) {
   output$msplot_gen <- renderDygraph({
     req(input$ms_yaxis)
     
-    ms() %>%
+    data <- ms() %>%
       filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
       rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) %>%
-      transmute(time_absolute_date_time, 
-                amu = smooth.spline(.[,input$ms_yaxis[1]], spar = input$smooth)$y) %>%
+      select(time_absolute_date_time, contains(input$ms_yaxis)) %>%
+      mutate(across(.cols = contains('amu'),
+                    .fns = ~smooth.spline(.x, spar = input$smooth)$y)) %>%
       dygraph(xlab = ifelse(input$ms_xaxis == 'tic_300_pv',
-                            'Temperature (°C)', 'Reaction Time (min)')) %>%
-      dySeries('amu') %>%
+                            'Temperature (°C)', 'Reaction Time (min)')) 
+    
+    dySeriesData(data, 'plot', input$ms_yaxis) %>%
       dyRangeSelector() %>%
       dyOptions(useDataTimezone = TRUE) %>%
+      dyOptions(strokeWidth = 3) %>%
       dyLegend(width = 450)
+      
   })
   
   output$msplot <- renderPlotly({
