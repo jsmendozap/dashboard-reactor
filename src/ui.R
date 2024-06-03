@@ -1,15 +1,9 @@
 menu <- list(
   br(),
-  accordion(
-    id = "files",
-    accordionItem(
-      title = "Files",
-      collapsed = T,
-      fileInput("reactor", "Reactor file"),
-      fileInput("gc", "GC file"),
-      fileInput("ms", "MS file"),
-    )
-  ),
+  shinyDirButton("directory", "Select folder",
+                 "Please select folder containing reactor, gc and ms files",
+                 icon = icon('folder', style = 'margin-right: 5px'),
+                 style = 'background-color: white'),
   sliderInput(inputId = 'log_events',
               label = "Event's minimum duration",
               min = 0, max = 60, value = 0),

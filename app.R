@@ -5,7 +5,7 @@ if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'h
 
 pacman::p_load(
     tidyverse, readxl, janitor, DT, dygraphs, shinyWidgets,
-    bs4Dash, shiny, prettyunits, plotly, zoo 
+    bs4Dash, shiny, prettyunits, plotly, zoo, shinyFiles 
 )
 
 cat("Running application\n")

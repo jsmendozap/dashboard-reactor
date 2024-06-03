@@ -1,9 +1,17 @@
 options(shiny.maxRequestSize=30*1024^2) 
 
 server <- function(input, output) {
+  
+  volumes <- c(Home = fs::path_home(),  getVolumes()())
+  shinyDirChoose(input, "directory", roots = volumes)
+  
+  path <- eventReactive(input$directory, {
+      dir(parseDirPath(volumes, input$directory), full.names = T)
+  })
+  
   df <- reactive({
-    req(input$reactor)
-    load_file(input$reactor$datapath)
+    req(path())
+    grep("*.xlsx", path(), value = TRUE) %>% load_file
   })
   
   bd <- reactive({
@@ -177,11 +185,15 @@ server <- function(input, output) {
 ## Raw data --------------------------------------------------------------------
 
   gc <- reactive({
-    req(input$gc)
-    load_gc(path = input$gc$datapath, bd = bd())
+    req(path())
+    tryCatch({
+      grep("*.txt", path(), value = TRUE) %>% load_gc(bd = bd())
+    }, error = \(e) { NULL })
   })
   
   output$UIcompunds <- renderUI({
+    req(gc())
+    
     comp <- colnames(gc())[-c(1:5)] %>%
       str_replace_all('_', ' ') %>% 
       str_to_title()
@@ -200,6 +212,7 @@ server <- function(input, output) {
   })
   
   output$gc_events <- renderUI({
+    req(gc())
     
     selected <- gc() %>% 
       filter(n() > 1, .by = event) %>%
@@ -235,8 +248,10 @@ server <- function(input, output) {
   })
 
   ms <- reactive({
-    req(input$ms)
-    load_ms(path = input$ms$datapath, bd = bd())
+    req(path())
+    tryCatch({
+      grep("*.dat", path(), value = TRUE) %>% load_ms(bd = bd())
+    }, error = \(e) { NULL })
   })
   
   output$xms <- renderUI({
@@ -248,6 +263,7 @@ server <- function(input, output) {
   })
   
   output$yms <- renderUI({
+    req(ms())
     
     choices <- ms() %>%
       select(contains('_amu_')) %>%
@@ -262,6 +278,7 @@ server <- function(input, output) {
   })
   
   output$ms_events <- renderUI({
+    req(ms())
     
     selected <- ms() %>% 
       filter(n() > 1, .by = event) %>%
@@ -278,6 +295,7 @@ server <- function(input, output) {
   
   output$msplot_gen <- renderDygraph({
     req(input$ms_yaxis)
+    req(ms())
     
     data <- ms() %>%
       rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) %>%
