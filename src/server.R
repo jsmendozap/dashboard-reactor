@@ -158,19 +158,6 @@ server <- function(input, output) {
     })
   })
   
-  output$diffTemp <- renderPlotly({
-    plot <- bd() %>%
-              mutate(difference = tic_300_pv - te_320) %>%
-              ggplot() +
-              geom_line(aes(x = date_time, y = difference), linewidth = 0.2) +
-              facet_wrap(~event, scales = 'free') +
-              labs(x = "Time", y = "Temperature differences") +
-              theme_bw() +
-              theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
-    
-    ggplotly(plot)
-  })
-  
   output$press <- renderReactable({
     bd() %>% 
       summarise(name = name[1],
