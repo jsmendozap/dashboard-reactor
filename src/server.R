@@ -225,7 +225,10 @@ server <- function(input, output) {
       labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
            y = "Composition") +
       facet_wrap(~event, scales = 'free', ncol = 2) +
-      theme_bw() 
+      theme_bw() +
+      theme(axis.text = element_text(color = 'black', size = 10),
+            axis.title = element_text(size = 12),
+            panel.background = element_rect(colour = 'black'))
   
     ggplotly(plot, dynamicTicks = T, tooltip = "fill")
       
@@ -287,7 +290,7 @@ server <- function(input, output) {
     dySeriesData(data, 'plot', input$ms_yaxis) %>%
       dyRangeSelector() %>%
       dyOptions(useDataTimezone = TRUE) %>%
-      dyOptions(strokeWidth = 3) %>%
+      dyOptions(strokeWidth = 2) %>%
       dyLegend(width = 450)
       
   })
@@ -309,7 +312,11 @@ server <- function(input, output) {
       labs(x = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
            y = "Signal detected (a.m.u)") +
       facet_wrap(~event, scales = 'free', ncol = 2) +
-      theme_bw() 
+      theme_bw()  +
+      theme(axis.text = element_text(color = 'black', size = 10),
+            axis.title = element_text(size = 12),
+            panel.background = element_rect(colour = 'black'),
+            plot.margin = unit(c(0, 0, 0.2, 0.2), units = 'inches'))
     
     ggplotly(plot, dynamicTicks = T, tooltip = c('color', 'x', 'y'))
   })
