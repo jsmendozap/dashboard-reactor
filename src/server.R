@@ -237,14 +237,11 @@ server <- function(input, output) {
   })
   
   output$xms <- renderUI({
-    if(input$tabset3 == 'General'){
-      selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
-                  choices = c("Time" = "time"))  
-    } else {
-      selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
-                  choices = c("Time" = "time",
-                              "Temperature" = "tic_300_pv"))  
-    }
+    conditionalPanel("input.tabset3 == 'Events'",
+                     selectInput(inputId = 'ms_xaxis', label = 'Select x axis:',
+                                 choices = c("Time" = "time",
+                                 "Temperature" = "tic_300_pv"))  
+                     )
   })
   
   output$yms <- renderUI({
@@ -261,18 +258,25 @@ server <- function(input, output) {
     )
   })
   
-  output$startms <- renderUI({
-    airDatepickerInput('mstime', label = 'Start time:',
-                       value = ms()$time_absolute_date_time[1],
-                       timepickerOpts = list("timeFormat" = "HH:mm"),
-                       timepicker = T)
+  output$ms_events <- renderUI({
+    
+    selected <- ms() %>% 
+      filter(n() > 1, .by = event) %>%
+      pull(event) %>% unique()
+    
+    conditionalPanel("input.tabset3 == 'Events'",
+                     pickerInput(
+                       inputId = "ms_event", label = "Select events to plot", 
+                       choices = unique(ms()$event), multiple = TRUE, selected = selected,
+                       options = list(`actions-box` = TRUE, `live-search` = TRUE)
+                     )  
+      )
   })
   
   output$msplot_gen <- renderDygraph({
     req(input$ms_yaxis)
     
     data <- ms() %>%
-      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
       rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) %>%
       select(time_absolute_date_time, contains(input$ms_yaxis)) %>%
       mutate(across(.cols = contains('amu'),
@@ -290,9 +294,11 @@ server <- function(input, output) {
   
   output$msplot <- renderPlotly({
     req(input$ms_yaxis)
+    dates <- ymd_hms(input$msplot_gen_date_window) 
     
     plot <- ms() %>%
-      filter(time_absolute_date_time >= ymd_hms(input$mstime)) %>%
+      filter(between(time_absolute_date_time, dates[1], dates[2]) &
+             event %in% input$ms_event) %>%
       pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
       mutate(value = smooth.spline(value, spar = input$smooth)$y, .by = Compound) %>%
       mutate(Compound = str_replace_all(Compound, '_', ' ')) %>% 
@@ -305,7 +311,7 @@ server <- function(input, output) {
       facet_wrap(~event, scales = 'free', ncol = 2) +
       theme_bw() 
     
-    ggplotly(plot, dynamicTicks = T, tooltip = 'color')
+    ggplotly(plot, dynamicTicks = T, tooltip = c('color', 'x', 'y'))
   })
   
   fit <- reactive({
