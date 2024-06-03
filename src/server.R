@@ -129,6 +129,8 @@ server <- function(input, output) {
   })
   
   output$temp <- renderReactable({
+    suppressWarnings({
+      
     bd() %>%
       summarise(name = name[1],
                 rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
@@ -136,7 +138,8 @@ server <- function(input, output) {
                 mean_set = mean(tic_300_sp),
                 mean_r1 = mean(te_310),
                 mean_r2 = mean(te_320),
-                .by = event) %>%
+                diff = list(tic_300_pv - te_320),
+                .by = event)  %>%
       select(-1) %>%
       mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
       custom_reactable(
@@ -146,9 +149,13 @@ server <- function(input, output) {
           mean_measure = colDef(name = 'Avg. measured'),
           mean_set = colDef(name = 'Avg. setted'),
           mean_r1 = colDef(name = 'Avg. Reactor 1'),
-          mean_r2 = colDef(name = 'Avg. Reactor 2')
-        )
+          mean_r2 = colDef(name = 'Avg. Reactor 2'),
+          diff = colDef(name = 'Temperature difference', minWidth = 350,
+                        cell = react_sparkline(., show_area = T, decimals = 2,
+                                               line_color = 'darkblue'))),
+        rowStyle = JS("function(rowInfo) { return { height: '50px' }}")
       )
+    })
   })
   
   output$diffTemp <- renderPlotly({
@@ -367,23 +374,25 @@ server <- function(input, output) {
 
   output$std <- renderReactable({
     
-    opt <- c('Ramp', 'TOS', 'regeneration', 'CO-TPD', 'Propane-TPD', 'H2-TPR')
-    opt2 <- c('opt1', 'opt2')
+    tecq <- c('Ramp', 'TOS', 'regeneration', 'CO-TPD', 'Propane-TPD', 'H2-TPR')
+    is <- c('Argon', 'Nitrogen')
     
     bd() %>%
       slice_head(n = 1, by = event) %>%
       select(event, name) %>%
-      mutate(nombre = list(opt), otro = list(opt2)) %>%
+      mutate(technique = list(tecq), is = list(is), qis = NA) %>%
       custom_reactable(selection = 'single', 
                        columns = list(
                          event = colDef(name = 'Event'),
                          name = colDef(name = 'Event name', minWidth = 300),
-                         nombre = colDef(cell = dropdown_extra(id = 'dropdown',
-                                                              choices = opt,
-                                                              class = 'dropdown-extra'),
-                                         minWidth = 150),
-                         otro = colDef(cell = dropdown_extra(id = 'dropdown2', opt2, class = 'dropdown-extra'), 
-                                       minWidth = 150)
+                         technique = colDef(name = 'Technique', minWidth = 150,
+                                            cell = dropdown_extra(id = 'dropdown',
+                                                              choices = tecq,
+                                                              class = 'dropdown-extra')),
+                         is = colDef(name = 'Internal Standard', minWidth = 150,
+                                     cell = dropdown_extra(id = 'dropdown2', choices = is,
+                                                           class = 'dropdown-extra')),
+                         qis = colDef(name = 'QIS', minWidth = 200, cell = text_extra('qis'))
                        ), style = "border-radius: '3px'"
                       )
   })
