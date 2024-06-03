@@ -14,7 +14,7 @@ log <- tabItem(tabName = 'log',
                        status = 'info',
                        solidHeader = T,
                        width = 12,
-                       DTOutput('log')
+                       reactableOutput('log')
                        )),
                  column(
                    width = 4,

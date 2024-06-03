@@ -31,55 +31,69 @@ server <- function(input, output) {
     renderdy(bd(), selected2(), input, 'legend2') 
     })
   
-  output$log <- renderDT({
+  output$log <- renderReactable({
     bd() %>%
-      slice(1, .by = event) %>%
+      slice_head(n = 1, by = event) %>%
       select(event, date_time, name, time_duration) %>%
-      rename('Event' = 1, 'Start time' = 2, 'Event name' = 3, 'Duration' = 4) %>%
-      datatable(options = list(pageLength = 5), selection = 'single')
-    })
+      custom_reactable(
+        columns = list(
+          event = colDef(name = 'Event', width = 100),
+          date_time = colDef(name = 'Start time', width = 200),
+          name = colDef(name = 'Event name', minWidth = 200),
+          time_duration = colDef(name = 'Duration', width = 100)
+        ), selection = 'single'
+      )
+  })
   
   output$valve <- renderText({
-    req(input$log_rows_selected)
+    req(getReactableState('log', 'selected'))
     
+    sel <- getReactableState('log', 'selected')
     pos <- bd() %>%
       slice_head(n = 1, by = event) %>%
       pull(rswitch_val)
     
-    paste('Valve position:', pos[input$log_rows_selected])
+    paste('Valve position:', pos[sel])
   })
   
   output$fi_110 <- renderValueBox({
-    reactor_values(bd(), 'fi_110', 'Air', input)
+    reactor_values(bd(), 'fi_110', 'Air')
   })
   
   output$fi_120 <- renderValueBox({
-    reactor_values(bd(), 'fi_120', 'Carbon dioxide', input)
+    reactor_values(bd(), 'fi_120', 'Carbon dioxide')
   })
   
   output$fi_130 <- renderValueBox({
-    reactor_values(bd(), 'fi_130', 'Argon / Propane', input)
+    reactor_values(bd(), 'fi_130', 'Argon / Propane')
   })
   
   output$fi_140 <- renderValueBox({
-    reactor_values(bd(), 'fi_140', 'Nitrogen', input)
+    reactor_values(bd(), 'fi_140', 'Nitrogen')
   })
   
   ## Quality control -----------------------------------------------------------
   
-  output$flow <- renderDT(bd() %>% 
-                            summarise(across(.cols = c(2, 4, 6, 8), .fn = \(x) round(sum(x)/n(), 1)),
-                                      .by = event) %>%
-                            select(-1) %>%
-                            rowwise() %>%
-                            mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
-                            rename('Air (mL/min)' = 1, 'Carbon dioxide (mL/min)' = 2,
-                                   'Argon / Propane (mL/min)' = 3, 'Nitrogen (mL/min)' = 4,
-                                   'Total flow (mL/min)' = 5),
-                          selection = 'single')
+  output$flow <- renderReactable({
+    bd() %>% 
+      summarise(across(.cols = c(2, 4, 6, 8),
+                       .fn = \(x) round(sum(x)/n(), 1)),
+                .by = event) %>%
+      select(-1) %>%
+      rowwise() %>%
+      mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
+      custom_reactable(
+        columns = list(
+          fi_110 = colDef(name = 'Air (mL/min)'),
+          fi_120 = colDef(name = 'Carbon dioxide (mL/min)'),
+          fi_130 = colDef(name = 'Argon / Propane (mL/min)'),
+          fi_140 = colDef(name = 'Nitrogen (mL/min)'),
+          total = colDef(name = 'Total flow (mL/min)')
+        ), 
+      )
+  }) 
   
-  
-  output$corr <- renderDT({
+  output$corr <- renderReactable({
     bd() %>% 
       summarise(cor_air = mean(((fi_110 + 1)/(1 + fic_110))) %>% round(1),
                 cor_co2 = mean(((fi_120 + 1)/(fic_120 + 1))) %>% round(1),
@@ -87,10 +101,14 @@ server <- function(input, output) {
                 cor_n2 = mean(((fi_140 + 1)/(fic_140 + 1))) %>% round(1),
                 .by = event) %>%
       select(-1) %>%
-      rename('Air' = 1, 'Carbon dioxide' = 2, 'Argon/ propane' = 3, 'Nitrogen' = 4) %>%
-      datatable(options = list(autoWidth = TRUE), selection = 'single') %>%
-      formatStyle(c('Air', 'Carbon dioxide', 'Argon/ propane', 'Nitrogen'),
-                  backgroundColor = styleInterval(c(0.9, 1.1), c('red', 'lightgreen', 'red')))
+      custom_reactable(
+        columns = list(
+          cor_air = colDef(name = 'Air', style = conditional_color),
+          cor_co2 = colDef(name = 'Carbon dioxide', style = conditional_color),
+          cor_ar = colDef(name = 'Argon / Propane', style = conditional_color),
+          cor_n2 = colDef(name = 'Nitrogen', style = conditional_color)
+        )
+      )
   })
   
   output$norm <- renderPlotly({
@@ -118,7 +136,9 @@ server <- function(input, output) {
     ggplotly(plot)
   })
   
-  output$temp <- renderDT({
+  output$temp <- renderReactable({
+    suppressWarnings({
+      
     bd() %>%
       summarise(name = name[1],
                 rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
@@ -126,28 +146,27 @@ server <- function(input, output) {
                 mean_set = mean(tic_300_sp),
                 mean_r1 = mean(te_310),
                 mean_r2 = mean(te_320),
-                .by = event) %>%
+                diff = list(tic_300_pv - te_320),
+                .by = event)  %>%
       select(-1) %>%
       mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
-      rename("Event" = 1, "Avg. measured" = 3, "Avg. setted" = 4,
-             "Rate of change" = 2, "Avg. Reactor 1" = 5, "Avg. Reactor 2" = 6) %>%
-      datatable(selection = 'single', options = list(pageLength = 5))
+      custom_reactable(
+        columns = list(
+          name = colDef(name = 'Event', minWidth = 200),
+          rate = colDef(name = 'Rate of change'),
+          mean_measure = colDef(name = 'Avg. measured'),
+          mean_set = colDef(name = 'Avg. setted'),
+          mean_r1 = colDef(name = 'Avg. Reactor 1'),
+          mean_r2 = colDef(name = 'Avg. Reactor 2'),
+          diff = colDef(name = 'Temperature difference', minWidth = 350,
+                        cell = react_sparkline(., show_area = T, decimals = 2,
+                                               line_color = 'darkblue'))),
+        rowStyle = JS("function(rowInfo) { return { height: '50px' }}")
+      )
+    })
   })
   
-  output$diffTemp <- renderPlotly({
-    plot <- bd() %>%
-              mutate(difference = tic_300_pv - te_320) %>%
-              ggplot() +
-              geom_line(aes(x = date_time, y = difference), linewidth = 0.2) +
-              facet_wrap(~event, scales = 'free') +
-              labs(x = "Time", y = "Temperature differences") +
-              theme_bw() +
-              theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
-    
-    ggplotly(plot)
-  })
-  
-  output$press <- renderDT({
+  output$press <- renderReactable({
     bd() %>% 
       summarise(name = name[1],
                 mean_set = mean(p_set),
@@ -157,17 +176,23 @@ server <- function(input, output) {
                 .by = event) %>%
       select(-1) %>% 
       mutate(across(.cols = 2:5, .fns = ~round(.x, 1))) %>%
-      rename("Event" = 1, "Avg. setted" = 2, "Avg. Reactor 1" = 3,
-             "Avg. Reactor 2" = 4, "Delta of pressure" = 5) %>%
-      datatable(selection = 'single')
+      custom_reactable(
+        columns = list(
+          name = colDef(name = 'Event', minWidth = 200),
+          mean_set = colDef(name = 'Avg. setted', minWidth = 80),
+          mean_r1 = colDef(name = 'Avg. Reactor 1', minWidth = 80),
+          mean_r2 = colDef(name = 'Avg. Reactor 2', minWidth = 80),
+          delta = colDef(name = 'Delta of pressure', minWidth = 80)
+        ), selection = 'single'
+      )
   })
   
   output$plotPress <- renderDygraph({
     
-    req(input$press_rows_selected)
+    req(getReactableState('press', 'selected'))
     
     selected <- slice_head(bd(), n = 1, by = event) %>%
-      filter(row_number() == input$press_rows_selected) %>%
+      filter(row_number() == getReactableState('press', 'selected')) %>%
       pull(event)
     
     bd() %>%
@@ -372,4 +397,32 @@ server <- function(input, output) {
          bty = 'n', xlab = '', ylab = '')
   })
   
+## Chemometric -----------------------------------------------------------------
+
+  output$std <- renderReactable({
+    
+    tecq <- c('Ramp', 'TOS', 'regeneration', 'CO-TPD', 'Propane-TPD', 'H2-TPR')
+    is <- c('Argon', 'Nitrogen')
+    
+    bd() %>%
+      slice_head(n = 1, by = event) %>%
+      select(event, name) %>%
+      mutate(technique = list(tecq), is = list(is), qis = NA) %>%
+      custom_reactable(selection = 'single', 
+                       columns = list(
+                         event = colDef(name = 'Event'),
+                         name = colDef(name = 'Event name', minWidth = 300),
+                         technique = colDef(name = 'Technique', minWidth = 150,
+                                            cell = dropdown_extra(id = 'dropdown',
+                                                              choices = tecq,
+                                                              class = 'dropdown-extra')),
+                         is = colDef(name = 'Internal Standard', minWidth = 150,
+                                     cell = dropdown_extra(id = 'dropdown2', choices = is,
+                                                           class = 'dropdown-extra')),
+                         qis = colDef(name = 'QIS', minWidth = 200, cell = text_extra('qis'))
+                       ), style = "border-radius: '3px'"
+                      )
+  })
+  
+  observeEvent(input$dropdown, print(input$dropdown))
 }

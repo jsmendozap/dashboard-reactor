@@ -9,10 +9,10 @@ renderdy <- function(bd, selected, input, legend) {
       dyCSS("dygraph.css") %>%
       dyLegend(labelsDiv = legend)
     
-    if(!is.null(input$log_rows_selected)){
+    if(!is.null(getReactableState('log', 'selected'))){
       
       selected <- slice_head(bd, n = 1, by = event) %>%
-        filter(row_number() == input$log_rows_selected) %>%
+        filter(row_number() == getReactableState('log', 'selected')) %>%
         pull(event)
       
       time <- bd %>% 

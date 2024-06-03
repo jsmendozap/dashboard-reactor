@@ -4,8 +4,8 @@ quality <- tabItem(tabName = 'quality',
                  tabPanel(title = "Flow", 
                           fluidRow( 
                             tabBox(width = 7,
-                              tabPanel(title = "Rate Flow", DTOutput('flow')),
-                              tabPanel(title = "Correlations", DTOutput('corr'))
+                              tabPanel(title = "Rate Flow", reactableOutput('flow')),
+                              tabPanel(title = "Correlations", reactableOutput('corr'))
                               ),
                             box(title = "Normalized milimeters plot",
                                 status = 'info',
@@ -17,13 +17,13 @@ quality <- tabItem(tabName = 'quality',
                           ),
                  tabPanel(title = "Temperature",
                           fluidRow(
-                            box(title = 'Summary', width = 12, status = 'info', solidHeader = T, DTOutput('temp')),
-                            plotlyOutput('diffTemp', height = '100vh')
+                            box(title = 'Summary', width = 12, status = 'info',
+                                solidHeader = T, reactableOutput('temp'))
                             )
                           ),
                  tabPanel(title = "Pressure",
                           fluidRow(
-                            box(width = 7, status = 'info', solidHeader = T, DTOutput('press')),
+                            box(width = 7, status = 'info', solidHeader = T, reactableOutput('press')),
                             box(width = 5, status = 'info', solidHeader = T,
                                 dygraphOutput('plotPress'), title = 'Pressure difference per event plot')
                             )
