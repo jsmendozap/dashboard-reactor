@@ -425,4 +425,18 @@ server <- function(input, output) {
   })
   
   observeEvent(input$dropdown, print(input$dropdown))
+  
+  ### Report -------------------------------------------------------------------
+  
+  output$report <- downloadHandler(
+
+    filename = "report.html",
+    content = function(file) {
+      tempReport <- file.path(tempdir(), "report.Rmd")
+      file.copy("report.Rmd", tempReport, overwrite = TRUE)
+      rmarkdown::render(tempReport, output_file = file,
+                        params = list(bd = bd()))
+    }
+  )
+  
 }

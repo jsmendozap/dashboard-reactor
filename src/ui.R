@@ -1,17 +1,20 @@
 menu <- list(
-  br(),
-  shinyDirButton("directory", "Select folder",
-                 "Please select folder containing reactor, gc and ms files",
-                 icon = icon('folder', style = 'margin-right: 5px'),
-                 style = 'background-color: white'),
-  sliderInput(inputId = 'log_events',
-              label = "Event's minimum duration",
-              min = 0, max = 60, value = 0),
-  menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
-  menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
-  menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px")),
-  menuItem("Chemometric", tabName = "chemometric", icon = icon("calculator", style = "margin-right: 5px"))
-)
+      br(),
+      shinyDirButton("directory", "Select folder",
+                     "Please select folder containing reactor, gc and ms files",
+                     icon = icon('folder', style = 'margin-right: 5px'),
+                     style = 'background-color: white'),
+      sliderInput(inputId = 'log_events',
+                  label = "Event's minimum duration",
+                  min = 0, max = 60, value = 0),
+      menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
+      menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
+      menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px")),
+      menuItem("Chemometric", tabName = "chemometric", icon = icon("calculator", style = "margin-right: 5px")),  
+      br(), downloadButton('report', 'Generate report',
+                           style = 'background-color: white',
+                           icon = icon('download', style = 'margin-right: 5px'))
+  )
 
 ui <- dashboardPage(
   dashboardHeader(title = dashboardBrand(
