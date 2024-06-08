@@ -401,7 +401,7 @@ server <- function(input, output) {
 
   output$std <- renderReactable({
     
-    tecq <- c('Ramp', 'TOS', 'regeneration', 'CO-TPD', 'Propane-TPD', 'H2-TPR')
+    tecq <- c('None', 'CO2-O2/TPO', 'Regeneration', 'CO2-TPD', 'Propane-TPD', 'H2-TPR', 'Propane-TPR', 'By Pass', 'TOS', 'Ramp')
     is <- c('Argon', 'Nitrogen')
     
     bd() %>%
@@ -412,19 +412,37 @@ server <- function(input, output) {
                        columns = list(
                          event = colDef(name = 'Event'),
                          name = colDef(name = 'Event name', minWidth = 300),
-                         technique = colDef(name = 'Technique', minWidth = 150,
+                         technique = colDef(name = 'Technique/Reaction', minWidth = 150,
                                             cell = dropdown_extra(id = 'dropdown',
                                                               choices = tecq,
                                                               class = 'dropdown-extra')),
                          is = colDef(name = 'Internal Standard', minWidth = 150,
-                                     cell = dropdown_extra(id = 'dropdown2', choices = is,
+                                     cell = dropdown_extra(id = 'is', choices = is,
                                                            class = 'dropdown-extra')),
-                         qis = colDef(name = 'QIS', minWidth = 200, cell = text_extra('qis'))
+                         qis = colDef(name = 'QIS (NmL/min)', minWidth = 100,  
+                                      cell = text_extra('qis', class = 'text-input'))
                        ), style = "border-radius: '3px'"
                       )
   })
   
-  observeEvent(input$dropdown, print(input$dropdown))
+  observeEvent(input$qis, {
+    if (input$dropdown$value == 'TOS') {
+      
+      event <- bd() %>% filter(row_number() == input$dropdown$row - 1) %>% pull(event)
+      val <- input$qis$value %>% as.numeric
+      ints <- input$is$value %>% tolower
+      
+      glimpse(
+        gc() %>%
+          filter(event == event) %>%
+          mutate(co2_flow = val * (carbon_dioxide/.data[[ints]]),
+                 propane_flow = val * (propane/.data[[ints]])) %>%
+          select(inject_time, time, event, co2_flow, propane_flow) 
+      )
+    }
+  })
+  
+  
   
   ### Report -------------------------------------------------------------------
   

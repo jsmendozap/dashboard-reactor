@@ -19,3 +19,8 @@
   background-color: white;
   width: 150px;
 }
+
+.text-input {
+  border: none;
+  width: 50px;
+}
