@@ -432,10 +432,13 @@ server <- function(input, output) {
 
     filename = "report.html",
     content = function(file) {
-      tempReport <- file.path(tempdir(), "report.Rmd")
-      file.copy("report.Rmd", tempReport, overwrite = TRUE)
-      rmarkdown::render(tempReport, output_file = file,
-                        params = list(bd = bd()))
+      tempReport <- file.path(tempdir(), "report.qmd")
+      file.copy("report.qmd", tempReport, overwrite = TRUE)
+      
+      quarto_render(input = tempReport, 
+                    execute_params = list(bd = bd()))
+      
+      file.copy(file.path(tempdir(), 'report.html'), file)
     }
   )
   

@@ -7,7 +7,7 @@ if (!"dataui" %in% installed.packages()) { remotes::install_github("timelyportfo
 pacman::p_load(
     tidyverse, readxl, janitor, dygraphs, shinyWidgets, bs4Dash, shiny,
     prettyunits, plotly, zoo, reactable, reactable.extras, reactablefmtr,
-    shinyFiles 
+    shinyFiles, quarto 
 )
 
 cat("Running application\n")

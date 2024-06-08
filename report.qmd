@@ -1,17 +1,17 @@
 ---
 title: "Experiment report"
 author: "Dusselier Group"
-output:
-  html_document:
+format:
+  html: 
     toc: true
-    toc_float: true
+    self-contained: true
 params:
   bd: NA
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
-pacman::p_load(reactable)
+pacman::p_load(reactable, tidyverse, reactablefmtr)
 ```
 
 ```{r}
@@ -28,11 +28,11 @@ custom_reactable <- function(bd, ...){
 }
 ```
 
-
-## Experiment description
+### Experiment description
 
 ```{r}
 params$bd %>%
+  as_tibble() %>%
   slice_head(n = 1, by = event) %>%
       select(event, date_time, name, time_duration) %>%
       custom_reactable(
@@ -41,16 +41,19 @@ params$bd %>%
           date_time = colDef(name = 'Start time', width = 200),
           name = colDef(name = 'Event name', minWidth = 200),
           time_duration = colDef(name = 'Duration', width = 100)
-        ), selection = 'single'
+        )
       )
 ```
 
-## Quality control {.tabset .tabset-pills}
+### Quality control 
 
-### Flows
+:::{.panel-tabset .column-body-outset}
+
+#### Flows
 
 ```{r}
-params$bd %>% 
+params$bd %>%
+  as_tibble() %>%
   summarise(across(.cols = c(2, 4, 6, 8),
                    .fn = \(x) round(sum(x)/n(), 1)),
             .by = event) %>%
@@ -68,10 +71,11 @@ params$bd %>%
   )
 ```
 
-### Temperature
+#### Temperature
 
 ```{r}
 params$bd %>%
+  as_tibble() %>%
   summarise(name = name[1],
             rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
             mean_measure = mean(tic_300_pv),
@@ -92,15 +96,15 @@ params$bd %>%
       mean_r2 = colDef(name = 'Avg. Reactor 2'),
       diff = colDef(name = 'Temperature difference',
                     cell = react_sparkline(., show_area = T, decimals = 2,
-                                           line_color = 'darkblue'))),
-    rowStyle = JS("function(rowInfo) { return { height: '50px' }}")
+                                           line_color = 'darkblue')))
   )
 ```
 
-### Pressure
+#### Pressure
 
 ```{r}
 params$bd %>%
+  as_tibble() %>%
   summarise(name = name[1],
                 mean_set = mean(p_set),
                 mean_r1 = mean(pt_310),
@@ -120,3 +124,4 @@ params$bd %>%
       )
 ```
 
+:::
