@@ -402,14 +402,13 @@ server <- function(input, output) {
   output$std <- renderReactable({
     
     tecq <- c('None', 'CO2-O2/TPO', 'Regeneration', 'CO2-TPD', 'Propane-TPD', 'H2-TPR', 'Propane-TPR', 'By Pass', 'TOS', 'Ramp')
-    is <- c('Argon', 'Nitrogen')
+    is <- c('None', 'Nitrogen', 'Argon')
     
     bd() %>%
       slice_head(n = 1, by = event) %>%
       select(event, name) %>%
       mutate(technique = list(tecq), is = list(is), qis = NA) %>%
-      custom_reactable(selection = 'single', 
-                       columns = list(
+      custom_reactable(columns = list(
                          event = colDef(name = 'Event'),
                          name = colDef(name = 'Event name', minWidth = 300),
                          technique = colDef(name = 'Technique/Reaction', minWidth = 150,
@@ -425,24 +424,52 @@ server <- function(input, output) {
                       )
   })
   
-  observeEvent(input$qis, {
-    if (input$dropdown$value == 'TOS') {
-      
-      event <- bd() %>% filter(row_number() == input$dropdown$row - 1) %>% pull(event)
-      val <- input$qis$value %>% as.numeric
-      ints <- input$is$value %>% tolower
-      
-      glimpse(
-        gc() %>%
-          filter(event == event) %>%
-          mutate(co2_flow = val * (carbon_dioxide/.data[[ints]]),
-                 propane_flow = val * (propane/.data[[ints]])) %>%
-          select(inject_time, time, event, co2_flow, propane_flow) 
-      )
-    }
+  tech <- reactiveValues()
+  is <- reactiveValues()
+  qis <- reactiveValues()
+  
+  observeEvent(input$dropdown, {
+    name <- as.character(input$dropdown$row)
+    tech[[name]] <- input$dropdown$value
   })
   
+  observeEvent(input$is, {
+    name <- as.character(input$is$row)
+    is[[name]] <- input$is$value
+  })
   
+  observeEvent(input$qis, {
+    name <- as.character(input$qis$row)
+    qis[[name]] <- input$qis$value
+  })
+  
+  observeEvent(input$btn_flow, {
+    
+    tbl <- data.frame(
+      event = bd()$event %>% unique,
+      technique = reactiveValuesToList(tech) %>% unlist,
+      is = reactiveValuesToList(is) %>% unlist %>% tolower,
+      qis = reactiveValuesToList(qis) %>% unlist %>% as.numeric) %>%
+      left_join(gc(), by = join_by('event')) %>%
+      select(inject_time, time, event, carbon_dioxide, propane,
+             nitrogen, argon, technique, qis, is)
+    
+    ddply(.data = tbl %>% filter(technique %in% c('By Pass', 'TOS')),
+          .variables =  'event',
+          .fun = \(x) {
+            std <- x$is %>% unique
+            mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
+            
+            x %>%
+              mutate(co2_flow = qis * (carbon_dioxide/.data[[std]]),
+                     propane_flow = qis * (propane/.data[[std]])) %>%
+              summarise(technique = unique(technique),
+                        co2 = mean_flow(co2_flow) * (60/22.4),
+                        propane = mean_flow(propane_flow) * (60/22.4))
+          }) %>%
+      glimpse
+    
+  })
   
   ### Report -------------------------------------------------------------------
   

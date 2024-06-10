@@ -35,6 +35,7 @@ params$bd %>%
   as_tibble() %>%
   slice_head(n = 1, by = event) %>%
       select(event, date_time, name, time_duration) %>%
+      mutate(date_time = as.POSIXct(date_time, origin="1970-01-01", tz="UTC")) %>%
       custom_reactable(
         columns = list(
           event = colDef(name = 'Event', width = 100),

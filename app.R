@@ -5,7 +5,7 @@ if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'h
 if (!"dataui" %in% installed.packages()) { remotes::install_github("timelyportfolio/dataui")}
 
 pacman::p_load(
-    tidyverse, readxl, janitor, dygraphs, shinyWidgets, bs4Dash, shiny,
+    plyr, tidyverse, readxl, janitor, dygraphs, shinyWidgets, bs4Dash, shiny,
     prettyunits, plotly, zoo, reactable, reactable.extras, reactablefmtr,
     shinyFiles, quarto 
 )
