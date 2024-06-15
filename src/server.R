@@ -146,7 +146,6 @@ server <- function(input, output) {
                 mean_set = mean(tic_300_sp),
                 mean_r1 = mean(te_310),
                 mean_r2 = mean(te_320),
-                diff = list(tic_300_pv - te_320),
                 .by = event)  %>%
       select(-1) %>%
       mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
@@ -157,13 +156,23 @@ server <- function(input, output) {
           mean_measure = colDef(name = 'Avg. measured'),
           mean_set = colDef(name = 'Avg. setted'),
           mean_r1 = colDef(name = 'Avg. Reactor 1'),
-          mean_r2 = colDef(name = 'Avg. Reactor 2'),
-          diff = colDef(name = 'Temperature difference', minWidth = 350,
-                        cell = react_sparkline(., show_area = T, decimals = 2,
-                                               line_color = 'darkblue'))),
+          mean_r2 = colDef(name = 'Avg. Reactor 2')),
         rowStyle = JS("function(rowInfo) { return { height: '50px' }}")
       )
     })
+  })
+  
+  output$diffTemp <- renderPlotly({
+    plot <- bd() %>%
+      mutate(difference = tic_300_pv - te_320) %>%
+      ggplot() +
+      geom_line(aes(x = date_time, y = difference), linewidth = 0.2) +
+      facet_wrap(~event, scales = 'free') +
+      labs(x = "Time", y = "Temperature differences") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
+    
+    ggplotly(plot)
   })
   
   output$press <- renderReactable({
