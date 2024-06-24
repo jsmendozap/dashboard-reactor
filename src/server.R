@@ -79,11 +79,11 @@ server <- function(input, output) {
       summarise(across(.cols = c(2, 4, 6, 8),
                        .fn = \(x) round(sum(x)/n(), 1)),
                 .by = event) %>%
-      select(-1) %>%
       rowwise() %>%
       mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
       custom_reactable(
         columns = list(
+          event = colDef(name = 'Event', minWidth = 80),
           fi_110 = colDef(name = 'Air (mL/min)'),
           fi_120 = colDef(name = 'Carbon dioxide (mL/min)'),
           fi_130 = colDef(name = 'Argon / Propane (mL/min)'),
@@ -100,9 +100,9 @@ server <- function(input, output) {
                 cor_ar = mean(((fi_130 + 1)/(fic_130 +1))) %>% round(1),
                 cor_n2 = mean(((fi_140 + 1)/(fic_140 + 1))) %>% round(1),
                 .by = event) %>%
-      select(-1) %>%
       custom_reactable(
         columns = list(
+          event = colDef(name = 'Event', minWidth = 80),
           cor_air = colDef(name = 'Air', style = conditional_color),
           cor_co2 = colDef(name = 'Carbon dioxide', style = conditional_color),
           cor_ar = colDef(name = 'Argon / Propane', style = conditional_color),
@@ -147,11 +147,11 @@ server <- function(input, output) {
                 mean_r1 = mean(te_310),
                 mean_r2 = mean(te_320),
                 .by = event)  %>%
-      select(-1) %>%
-      mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
+      mutate(across(.cols = 3:7, .fns = ~round(.x, 1))) %>%
       custom_reactable(
         columns = list(
-          name = colDef(name = 'Event', minWidth = 200),
+          event = colDef(name = 'Event', minWidth = 80),
+          name = colDef(name = 'Name', minWidth = 200),
           rate = colDef(name = 'Rate of change'),
           mean_measure = colDef(name = 'Avg. measured'),
           mean_set = colDef(name = 'Avg. setted'),
@@ -166,9 +166,9 @@ server <- function(input, output) {
     plot <- bd() %>%
       mutate(difference = tic_300_pv - te_320) %>%
       ggplot() +
-      geom_line(aes(x = date_time, y = difference), linewidth = 0.2) +
+      geom_line(aes(x = te_310, y = difference), linewidth = 0.2) +
       facet_wrap(~event, scales = 'free') +
-      labs(x = "Time", y = "Temperature differences") +
+      labs(x = "Temperature (°C)", y = "Temperature differences (°C)") +
       theme_bw() +
       theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
     
@@ -182,16 +182,16 @@ server <- function(input, output) {
                 mean_r1 = mean(pt_310),
                 mean_r2 = mean(pt_320),
                 delta = mean_r1 - mean_r2,
-                .by = event) %>%
-      select(-1) %>% 
-      mutate(across(.cols = 2:5, .fns = ~round(.x, 1))) %>%
+                .by = event) %>% 
+      mutate(across(.cols = 3:6, .fns = ~round(.x, 1))) %>%
       custom_reactable(
         columns = list(
-          name = colDef(name = 'Event', minWidth = 200),
+          event = colDef(name = 'Event', minWidth = 80),
+          name = colDef(name = 'Name', minWidth = 120),
           mean_set = colDef(name = 'Avg. setted', minWidth = 80),
           mean_r1 = colDef(name = 'Avg. Reactor 1', minWidth = 80),
           mean_r2 = colDef(name = 'Avg. Reactor 2', minWidth = 80),
-          delta = colDef(name = 'Delta of pressure', minWidth = 80)
+          delta = colDef(name = 'Delta of pressure', minWidth = 90)
         ), selection = 'single'
       )
   })
@@ -269,6 +269,7 @@ server <- function(input, output) {
       filter(Compound %in% input$compounds & event %in% input$gc_event) %>%
       ggplot(aes(x = .data[[input$gc_xaxis]], y = value, fill = Compound)) +
       geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
+      geom_hline(yintercept = 100, linetype = 'dashed') +
       labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
            y = "Composition") +
       facet_wrap(~event, scales = 'free', ncol = 2) +
@@ -452,32 +453,133 @@ server <- function(input, output) {
     qis[[name]] <- input$qis$value
   })
   
-  observeEvent(input$btn_flow, {
+  chem_values <- eventReactive(input$btn_flow, {
     
-    tbl <- data.frame(
-      event = bd()$event %>% unique,
+    sel_events <- function(x, qis) {
+      events <- x %>% unique
+      filter <- reactiveValuesToList(qis) %>% unlist %>% names %>% as.numeric
+      events[filter]
+    }
+    
+    data.frame(
+      event = sel_events(bd()$event, qis),
       technique = reactiveValuesToList(tech) %>% unlist,
       is = reactiveValuesToList(is) %>% unlist %>% tolower,
       qis = reactiveValuesToList(qis) %>% unlist %>% as.numeric) %>%
+      drop_na(qis) %>%
       left_join(gc(), by = join_by('event')) %>%
-      select(inject_time, time, event, carbon_dioxide, propane,
-             nitrogen, argon, technique, qis, is)
+      rowwise() %>%
+      mutate(across(9:ncol(.), ~ qis * (. / get(is)) * (60 / 22.4))) %>%
+      ungroup()
+  })
+  
+  output$flow_compounds <- renderUI({
     
-    ddply(.data = tbl %>% filter(technique %in% c('By Pass', 'TOS')),
-          .variables =  'event',
-          .fun = \(x) {
-            std <- x$is %>% unique
-            mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
+    comp <- colnames(gc())[-c(1:5)] %>%
+      {.[which(!. %in% c('nitrogen', 'argon'))]} %>%
+      str_replace_all('_', ' ') %>% 
+      str_to_title()
+    
+    pickerInput(
+      inputId = "graph_compounds", label = "Select compounds to plot", 
+      choices = comp, multiple = TRUE, selected = comp,
+      options = list(`actions-box` = TRUE, `live-search` = TRUE),
+    )
+  })
+  
+  output$flow_events <- renderUI({
+    
+    selected <- chem_values() %>% pull(event) %>% unique()
+    
+    pickerInput(
+      inputId = "graph_event", label = "Select events to plot", 
+      choices = selected, multiple = TRUE, selected = selected,
+      options = list(`actions-box` = TRUE, `live-search` = TRUE)
+    )
+  })
+  
+  output$molar_flow <- renderPlotly({
+    req(chem_values())
+    req(input$graph_compounds)
+    req(input$graph_event)
+    
+    plot <- chem_values() %>%
+      select(event, time, 9:ncol(.)) %>%
+      pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+      filter(!Compound %in% c('argon', 'nitrogen')) %>%
+      mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
+      filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
+      ggplot(aes(x = time, y = value, fill = Compound)) +
+      geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
+      labs(x = 'Time (min)', y = "Molar flow (mmol/h)") +
+      facet_wrap(~event, scales = 'free', ncol = 2) +
+      theme_bw() +
+      theme(axis.text = element_text(color = 'black', size = 10),
+            axis.title = element_text(size = 12),
+            panel.background = element_rect(colour = 'black'))
+    
+    ggplotly(plot, dynamicTicks = T, tooltip = "fill")
+    
+  })
+  
+  output$boxplot <- renderPlot({
+    
+    avgs <- ddply(.data = chem_values() %>% filter(technique == 'By Pass'),
+                  .variables =  'event',
+                  .fun = \(x) {
+                    std <- x$is %>% unique
+                    mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
             
-            x %>%
-              mutate(co2_flow = qis * (carbon_dioxide/.data[[std]]),
-                     propane_flow = qis * (propane/.data[[std]])) %>%
-              summarise(technique = unique(technique),
-                        co2 = mean_flow(co2_flow) * (60/22.4),
-                        propane = mean_flow(propane_flow) * (60/22.4))
-          }) %>%
-      glimpse
+                    x %>%
+                      mutate(co2_flow = qis * (carbon_dioxide/.data[[std]]),
+                             propane_flow = qis * (propane/.data[[std]])) %>%
+                      summarise(technique = unique(technique),
+                                co2 = mean_flow(co2_flow) * (60/22.4),
+                                propane = mean_flow(propane_flow) * (60/22.4))
+          })
     
+    bypass <- chem_values() %>%
+      select(event, technique) %>% 
+      distinct() %>%
+      filter(technique %in% c('By Pass', 'TOS')) %>%
+      left_join(avgs) %>%
+      fill(co2, propane, .direction = 'down') %>%
+      transmute(event, technique, co2_bypass = co2, propane_bypass = propane) 
+    
+    mass <- as.character(parseDirPath(volumes, input$directory)) %>%
+      strsplit(" ") %>%
+      unlist %>%
+      {.[length(.) - 1]} %>%
+      as.numeric
+    
+    chem_values() %>%
+      mutate(across(.cols = 9:ncol(.), .fns = \(x) x/mass)) %>%
+      filter(technique == 'TOS') %>%
+      left_join(bypass) %>%
+      mutate(carbon_dioxide = carbon_dioxide - co2_bypass,
+             propane = propane - propane_bypass) %>%
+      select(event, 9:ncol(.), -c(co2_bypass, propane_bypass)) %>%
+      pivot_longer(cols = 2:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+      filter(!Compound %in% c('argon', 'nitrogen')) %>%
+      mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
+      filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
+      group_by(Compound, event) %>%
+      filter(!value %in% boxplot.stats(value)$out) %>%
+      ungroup %>%
+      ggplot(aes(x = Compound, y = value, fill = Compound)) +
+      geom_boxplot() +
+      stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +
+      stat_summary(fun = min, geom = "point", shape = 25) +
+      stat_summary(fun = max, geom = "point", shape = 19) +
+      labs(x = '', y = "Molar flow (mmol/h)") +
+      facet_wrap(~event, scales = 'free', ncol = 2) +
+      theme_bw() +
+      theme(axis.text.y = element_text(color = 'black', size = 10),
+            axis.title.y = element_text(size = 12),
+            panel.background = element_rect(colour = 'black'),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank())
   })
   
   ### Report -------------------------------------------------------------------
