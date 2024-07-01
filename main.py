@@ -1,9 +1,18 @@
 import subprocess
 import os 
+import sys
 
-R = r"C:\Program Files\R\R-4.2.1\bin\x64\Rscript.exe"  
-app = r"C:\Users\juan\Downloads\dashboard-reactor-development\app.R" 
-#"shiny::runGitHub('dashboard-reactor', 'jsmendozap', ref = 'main', launch.browser = T)"
+try:
+    import winapps
+except ImportError:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'winapps'])
+    import winapps
+
+for item in winapps.list_installed():
+    if "R for Windows" in item.name:
+        R = f"{item.install_location}\\bin\\x64\\Rscript.exe"
+
+app = "shiny::runGitHub('dashboard-reactor', 'jsmendozap', ref = 'main', launch.browser = T)"
 
 # Setting libraries location
 Rversion = subprocess.run(f"{R} -e \"getRversion() |> as.character() |> cat()\"", capture_output = True, text = True).stdout.strip()
@@ -18,11 +27,9 @@ if not os.path.exists(Rlib):
 shiny = "if(is.na(match('shiny', installed.packages()))) { install.packages('shiny', repos = 'http://cran.us.r-project.org') }"
 subprocess.run(f"{R} -e \"{shiny}\"")
 
-# Verificar la ubicación de quarto.exe
+# Verifying quarto installation
 quarto_path = subprocess.run("where quarto.exe", capture_output = True, text = True).stdout.strip()
+command = f'{R} -e "{app}" "{quarto_path}"'
 
-# Construir el comando para ejecutar el script R
-command = f'"{R}" "{app}" "{quarto_path}"'
-
-# Ejecutar el comando y capturar la salida
+# Executing the application 
 subprocess.Popen(command, shell = True)
