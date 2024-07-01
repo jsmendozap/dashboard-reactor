@@ -8,6 +8,11 @@ pacman::p_load(
     shiny, prettyunits, plotly, zoo, reactable, reactable.extras, shinyFiles 
 )
 
+if (.Platform$OS.type == "windows") {
+  args <- commandArgs(trailingOnly = TRUE)
+  Sys.setenv(QUARTO_PATH = args[1])
+}
+
 cat("Running application\n")
 walk(.x = dir('src', '*.R', full.names = T, recursive = T), .f = source)
 shinyApp(ui, server)
