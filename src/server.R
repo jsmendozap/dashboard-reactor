@@ -44,6 +44,28 @@ server <- function(input, output) {
         ), selection = 'single'
       )
   })
+
+  output$leak <- renderUI({
+    req(bd())
+
+    test <- bd() %>%
+      rowwise() %>%
+      mutate(sum = sum(fic_110, fic_120, fic_130, fic_140)) %>%
+      ungroup() %>%
+      filter(n > 5 & p_set != 0 & sum == 0) %>% 
+      select(event, n, p_set, sum, pt_310) %>%
+      filter(event == max(event)) %>%
+      slice(c(1, n())) %>% 
+      {c(event = unique(.$event), dif = .$pt_310[1] - .$pt_310[2])}
+
+    renderPrint({ 
+      if(!is.na(test[1])){
+        str_glue("Event: {test[1]} \nPressure difference: {round(test[2], 2)}")
+      } else {
+        cat("No Leak test found in data")
+      }
+     })
+  })
   
   output$valve <- renderText({
     req(getReactableState('log', 'selected'))
@@ -461,6 +483,9 @@ server <- function(input, output) {
       events[filter]
     }
     
+    mass <- parseDirPath(volumes, input$directory) %>% as.character %>% 
+      strsplit(" ") %>% unlist %>% {.[length(.) - 1]} %>% as.numeric(.)/1000000
+    
     data.frame(
       event = sel_events(bd()$event, qis),
       technique = reactiveValuesToList(tech) %>% unlist,
@@ -469,7 +494,7 @@ server <- function(input, output) {
       drop_na(qis) %>%
       left_join(gc(), by = join_by('event')) %>%
       rowwise() %>%
-      mutate(across(9:ncol(.), ~ qis * (. / get(is)) * (60 / 22.4))) %>%
+      mutate(across(9:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass)))) %>%
       ungroup()
   })
   
@@ -524,6 +549,9 @@ server <- function(input, output) {
   
   output$boxplot <- renderPlot({
     
+    mass <- parseDirPath(volumes, input$directory) %>% as.character %>% 
+      strsplit(" ") %>% unlist %>% {.[length(.) - 1]} %>% as.numeric(.)/1000000
+    
     avgs <- ddply(.data = chem_values() %>% filter(technique == 'By Pass'),
                   .variables =  'event',
                   .fun = \(x) {
@@ -534,8 +562,8 @@ server <- function(input, output) {
                       mutate(co2_flow = qis * (carbon_dioxide/.data[[std]]),
                              propane_flow = qis * (propane/.data[[std]])) %>%
                       summarise(technique = unique(technique),
-                                co2 = mean_flow(co2_flow) * (60/22.4),
-                                propane = mean_flow(propane_flow) * (60/22.4))
+                                co2 = mean_flow(co2_flow) * (60/(22.4 * mass)),
+                                propane = mean_flow(propane_flow) * (60/(22.4 * mass)))
           })
     
     bypass <- chem_values() %>%
@@ -545,12 +573,6 @@ server <- function(input, output) {
       left_join(avgs) %>%
       fill(co2, propane, .direction = 'down') %>%
       transmute(event, technique, co2_bypass = co2, propane_bypass = propane) 
-    
-    mass <- as.character(parseDirPath(volumes, input$directory)) %>%
-      strsplit(" ") %>%
-      unlist %>%
-      {.[length(.) - 1]} %>%
-      as.numeric
     
     chem_values() %>%
       mutate(across(.cols = 9:ncol(.), .fns = \(x) x/mass)) %>%
@@ -563,9 +585,9 @@ server <- function(input, output) {
       filter(!Compound %in% c('argon', 'nitrogen')) %>%
       mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
       filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
-      group_by(Compound, event) %>%
-      filter(!value %in% boxplot.stats(value)$out) %>%
-      ungroup %>%
+      #group_by(Compound, event) %>%
+      #filter(!value %in% boxplot.stats(value)$out) %>%
+      #ungroup %>%
       ggplot(aes(x = Compound, y = value, fill = Compound)) +
       geom_boxplot() +
       stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +

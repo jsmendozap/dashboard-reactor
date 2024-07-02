@@ -10,7 +10,7 @@ chemometric <- tabItem(tabName = "chemometric",
                                 tabPanel(title = "Molar plot",
                                          fluidRow(
                                            column(width = 12, 
-                                                  plotlyOutput('molar_flow', height = '50vh'))
+                                                  plotlyOutput('molar_flow', height = '400px'))
                                          )),
                                 tabPanel(title = "Box plot",
                                          fluidRow(
