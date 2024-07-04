@@ -1,11 +1,11 @@
 chemometric <- tabItem(tabName = "chemometric",
-                       fluidRow(reactableOutput('std', width = '100%'),
-                                actionButton('btn_flow', label = 'Calculate')),
+                       fluidRow(reactableOutput('std', width = '100%')),
                        br(),
                        fluidRow(
                          column(width = 3,
                                 uiOutput('flow_compounds'),
-                                uiOutput('flow_events')),
+                                uiOutput('flow_events'),
+                                actionButton('btn_flow', label = 'Calculate flows')),
                          tabBox(width = 9,
                                 tabPanel(title = "Molar plot",
                                          fluidRow(
