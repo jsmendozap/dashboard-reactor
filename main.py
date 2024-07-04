@@ -29,7 +29,7 @@ run(f"{R} -e \"{shiny}\"")
 quarto_path = run("where quarto.exe", capture_output = True, text = True).stdout.strip()
 
 app = "shiny::runGitHub('dashboard-reactor', 'jsmendozap', ref = 'main', launch.browser = T)"
-command = f'{R} -e "{app}" "{quarto_path}"'
+command = f'"{R}" -e "{app}" "{quarto_path}"'
 
 # Executing the application 
 Popen(command, shell = True)

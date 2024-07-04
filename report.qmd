@@ -94,10 +94,7 @@ params$bd %>%
       mean_measure = colDef(name = 'Avg. measured'),
       mean_set = colDef(name = 'Avg. setted'),
       mean_r1 = colDef(name = 'Avg. Reactor 1'),
-      mean_r2 = colDef(name = 'Avg. Reactor 2'),
-      diff = colDef(name = 'Temperature difference',
-                    cell = react_sparkline(., show_area = T, decimals = 2,
-                                           line_color = 'darkblue')))
+      mean_r2 = colDef(name = 'Avg. Reactor 2'))
   )
 ```
 
