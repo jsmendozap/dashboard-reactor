@@ -16,16 +16,17 @@ menu <- list(
                            icon = icon('download', style = 'margin-right: 5px'))
   )
 
-ui <- dashboardPage(
+ui <- dashboardPage(title = 'Experiment control',
   dashboardHeader(title = dashboardBrand(
     image = "https://media.licdn.com/dms/image/D4E0BAQFRTe4HelmdIA/company-logo_200_200/0/1706107028417/dusselier_lab_logo?e=1720051200&v=beta&t=sfFl9vN4z9mXj411z83IRsH6KmaWfuxWYfro3K2a218",
-    title = span("Experiment control", style = "font-weight: bold; color: #6c757d")
-  )),
+    title = span("Experiment control", style = "font-weight: bold; color: #6c757d")),
+    div(textOutput('dir_header'), style = 'color: #6c757d; font-weight: bold')
+  ),
   dashboardSidebar(
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
   dashboardBody(tabItems(log, quality, raw_data, chemometric),
-                tags$head(includeCSS("www/custom.css")),
+                tags$head(includeCSS("www/custom.css")), 
                 reactable_extras_dependency())
 )
