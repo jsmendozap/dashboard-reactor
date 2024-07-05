@@ -4,9 +4,14 @@ menu <- list(
                      "Please select folder containing reactor, gc and ms files",
                      icon = icon('folder', style = 'margin-right: 5px'),
                      style = 'background-color: white'),
-      sliderInput(inputId = 'log_events',
-                  label = "Event's minimum duration",
-                  min = 0, max = 60, value = 0),
+      span("Event's minimum duration", style = 'padding-bottom: 0px; font-weight: bold; display: flex; justify-content: center'),
+      div(
+        numericInput(inputId = 'log_events', 
+                   label = NULL,
+                   min = 0, max = 1440, value = 0, width = 150),
+        span('minutes', sytle = 'margin-left: 5px'),
+        style = 'display: flex; align-items: center; margin-top: 0'
+      ),               
       menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
       menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
       menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px")),

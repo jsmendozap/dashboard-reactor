@@ -14,7 +14,7 @@ server <- function(input, output) {
       as.character %>%
       strsplit('/') %>%
       unlist %>%
-      {paste("Directory:", .[length(.)])}
+      {paste("Folder:", .[length(.)])}
   })
   
   df <- reactive({
@@ -552,7 +552,7 @@ server <- function(input, output) {
     ggplotly(plot, dynamicTicks = T, tooltip = "fill")
     
   })
-  
+
   ### Report -------------------------------------------------------------------
   
   output$report <- downloadHandler(

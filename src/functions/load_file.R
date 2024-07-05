@@ -23,14 +23,12 @@ load_file <- function(file){
         tic_300_sp == tic_300_pv ~ "Isotherm",
         tic_300_sp > tic_300_pv ~ "Heating",
         tic_300_sp < tic_300_pv ~ "Cooling down"),
-      r1 = if_else(rswitch_val == 1, sum(fi_120, fi_130, fi_140), fi_110),
-      r2 = if_else(rswitch_val == 1, fi_110, sum(fi_120, fi_130, fi_140))) %>%
+      r1 = if_else(rswitch_val == 1, sum(fic_120, fic_130, fic_140), fic_110),
+      r2 = if_else(rswitch_val == 1, fic_110, sum(fic_120, fic_130, fic_140))) %>%
     ungroup() %>%
-    group_by(event) %>%
-    mutate(temp = mode(temp)) %>%
-    ungroup() %>%
+    mutate(temp = mode(temp), .by = event) %>%
     rowwise() %>%
-    mutate(name = str_glue("R1-{round(r1)} R2-{round(r2)} T-{temp} P-{p_set}")) %>%
+    mutate(name = str_glue("R1-{r1} R2-{r2} T-{temp} P-{p_set}")) %>%
     ungroup() 
 }
 
