@@ -1,22 +1,28 @@
-chemometric <- tabItem(tabName = "chemometric",
-                       fluidRow(reactableOutput('std', width = '100%')),
+chemometric_ui <- function(id) {
+
+       ns <- NS(id)
+
+       tabItem(tabName = "chemometric",
+                       fluidRow(reactableOutput(ns('std'), width = '100%')),
                        br(),
                        fluidRow(
                          column(width = 3,
-                                uiOutput('flow_compounds'),
-                                uiOutput('flow_events'),
-                                actionButton('btn_flow', label = 'Calculate flows')),
+                                uiOutput(ns('flow_compounds')),
+                                uiOutput(ns('flow_events')),
+                                actionButton(ns('btn_flow'), label = 'Calculate flows')),
                          tabBox(width = 9,
                                 tabPanel(title = "Molar plot",
                                          fluidRow(
                                            column(width = 12, 
-                                                  plotlyOutput('molar_flow', height = '400px'))
+                                                  plotlyOutput(ns('molar_flow'), height = '400px'))
                                          )),
                                 tabPanel(title = "Box plot",
                                          fluidRow(
                                            column(width = 12, 
-                                                  plotOutput('boxplot', height = '50vh'))
+                                                  plotOutput(ns('boxplot'), height = '50vh'))
                                          ))
                           )
                        )
 )
+
+}
