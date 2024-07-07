@@ -1,13 +1,14 @@
-chem_server <- function(id, bd, gc, path) {
+chem_server <- function(id, app_state) {
   moduleServer(id, function(input, output, session) {
 
     ns <- NS(id)
     output$std <- renderReactable({
-    
+      req(app_state$bd)
+
       tecq <- c('None', 'CO2-O2/TPO', 'Regeneration', 'CO2-TPD', 'Propane-TPD', 'H2-TPR', 'Propane-TPR', 'By Pass', 'TOS', 'Ramp')
       is <- c('None', 'Nitrogen', 'Argon')
       
-      bd %>%
+      app_state$bd() %>%
         slice_head(n = 1, by = event) %>%
         select(event, name) %>%
         mutate(technique = list(tecq), is = list(is), qis = NA) %>%
@@ -54,23 +55,24 @@ chem_server <- function(id, bd, gc, path) {
         events[filter]
       }
       
-      mass <- path %>% as.character %>% strsplit(" ") %>%
+      mass <- app_state$path() %>% as.character %>% strsplit(" ") %>%
         unlist %>% {.[length(.) - 1]} %>% as.numeric(.)/1000000
       
       data.frame(
-        event = sel_events(bd$event, qis),
+        event = sel_events(app_state$bd()$event, qis),
         technique = reactiveValuesToList(tech) %>% unlist %>% discard(~.x == "None"),
         is = reactiveValuesToList(is) %>% unlist %>% discard(~.x == "None") %>% tolower,
         qis = reactiveValuesToList(qis) %>% unlist %>% as.numeric %>% discard(is.na)) %>%
-        left_join(gc, by = join_by('event')) %>%
+        left_join(app_state$gc(), by = join_by('event')) %>%
         rowwise() %>%
         mutate(across(9:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass)))) %>%
         ungroup()
     })
     
     output$flow_compounds <- renderUI({
-      
-      comp <- colnames(gc)[-c(1:5)] %>%
+      req(app_state$gc)
+
+      comp <- colnames(app_state$gc())[-c(1:5)] %>%
         {.[which(!. %in% c('nitrogen', 'argon'))]} %>%
         str_replace_all('_', ' ') %>% 
         str_to_title()

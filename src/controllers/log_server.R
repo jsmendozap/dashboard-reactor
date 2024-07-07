@@ -1,20 +1,23 @@
-log_server <- function(id, bd, df) {
+log_server <- function(id, app_state) {
   moduleServer(id, function(input, output, session){
 
     selected1 <- reactive({ input$var })
     selected2 <- reactive({ input$var2 })
     
     output$dygraph <- renderDygraph({ 
-      renderdy(bd, selected1(), input, 'legend') 
+      req(app_state$bd)
+      renderdy(app_state$bd(), selected1(), input, 'legend') 
     })
     
     output$dygraph2 <- renderDygraph({
-      renderdy(bd, selected2(), input, 'legend2') 
-      })
+      req(app_state$bd)
+      renderdy(app_state$bd(), selected2(), input, 'legend2') 
+    })
     
     output$log <- renderReactable({
-      
-      bd %>%
+      req(app_state$bd)
+
+      app_state$bd() %>%
         slice_head(n = 1, by = event) %>%
         select(event, date_time, name, time_duration) %>%
         custom_reactable(
@@ -28,9 +31,9 @@ log_server <- function(id, bd, df) {
     })
   
     output$leak <- renderUI({
-      req(df)
+      req(app_state$df)
   
-      test <- df %>%
+      test <- app_state$df() %>%
         rowwise() %>%
         mutate(sum = sum(fic_110, fic_120, fic_130, fic_140)) %>%
         ungroup() %>%
@@ -53,7 +56,7 @@ log_server <- function(id, bd, df) {
       req(getReactableState('log', 'selected'))
       
       sel <- getReactableState('log', 'selected')
-      pos <- bd %>%
+      pos <- app_state$bd() %>%
         slice_head(n = 1, by = event) %>%
         pull(rswitch_val)
       
@@ -61,20 +64,19 @@ log_server <- function(id, bd, df) {
     })
     
     output$fi_110 <- renderValueBox({
-      reactor_values(bd, 'fi_110', 'Air')
+      reactor_values(app_state$bd(), 'fi_110', 'Air')
     })
     
     output$fi_120 <- renderValueBox({
-      reactor_values(bd, 'fi_120', 'Carbon dioxide')
+      reactor_values(app_state$bd(), 'fi_120', 'Carbon dioxide')
     })
     
     output$fi_130 <- renderValueBox({
-      reactor_values(bd, 'fi_130', 'Argon / Propane')
+      reactor_values(app_state$bd(), 'fi_130', 'Argon / Propane')
     })
     
     output$fi_140 <- renderValueBox({
-      reactor_values(bd, 'fi_140', 'Nitrogen')
-    })
-    
+      reactor_values(app_state$bd(), 'fi_140', 'Nitrogen')
+    })   
   })
 }

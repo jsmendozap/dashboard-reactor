@@ -1,8 +1,10 @@
-qualiity_server <- function(id, bd) {
+quality_server <- function(id, app_state) {
   moduleServer(id, function(input, output, session) {
     
     output$flow <- renderReactable({
-      bd %>% 
+      req(app_state$bd)
+
+      app_state$bd() %>% 
         summarise(across(.cols = c(2, 4, 6, 8),
                          .fn = \(x) round(sum(x)/n(), 1)),
                   .by = event) %>%
@@ -21,7 +23,9 @@ qualiity_server <- function(id, bd) {
     }) 
     
     output$corr <- renderReactable({
-      bd %>% 
+      req(app_state$bd)
+
+      app_state$bd() %>% 
         summarise(cor_air = mean(((fi_110 + 1)/(1 + fic_110))) %>% round(1),
                   cor_co2 = mean(((fi_120 + 1)/(fic_120 + 1))) %>% round(1),
                   cor_ar = mean(((fi_130 + 1)/(fic_130 +1))) %>% round(1),
@@ -39,10 +43,10 @@ qualiity_server <- function(id, bd) {
     })
     
     output$norm <- renderPlotly({
-      
+      req(app_state$bd)
       plot <- tryCatch(expr = {
         
-        bd %>% 
+        app_state$bd() %>% 
           transmute(date_time, deriv = norm_deriv(normoliter_out)) %>% 
           group_by(group = rep(row_number(), each = 5, length.out = n())) %>%
           summarise(time = mean(date_time), 
@@ -53,7 +57,7 @@ qualiity_server <- function(id, bd) {
           theme_bw()
         
       }, error = \(e) {
-        ggplot(bd) +
+        ggplot(app_state$bd()) +
           geom_line(aes(x = date_time, y = normoliter_out)) +
           labs(x = "Time", y = "Normalized milimeters",
                title = 'Flow rate not possible') +
@@ -64,9 +68,10 @@ qualiity_server <- function(id, bd) {
     })
     
     output$temp <- renderReactable({
+      req(app_state$bd)
       suppressWarnings({
         
-      bd %>%
+        app_state$bd() %>%
         summarise(name = name[1],
                   rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
                   mean_measure = mean(tic_300_pv),
@@ -90,7 +95,9 @@ qualiity_server <- function(id, bd) {
     })
     
     output$diffTemp <- renderPlotly({
-      plot <- bd %>%
+      req(app_state$bd)
+
+      plot <- app_state$bd() %>%
         mutate(difference = tic_300_pv - te_320) %>%
         ggplot() +
         geom_line(aes(x = te_310, y = difference), linewidth = 0.2) +
@@ -103,7 +110,9 @@ qualiity_server <- function(id, bd) {
     })
     
     output$press <- renderReactable({
-      bd %>% 
+      req(app_state$bd)
+
+      app_state$bd() %>% 
         summarise(name = name[1],
                   mean_set = mean(p_set),
                   mean_r1 = mean(pt_310),
@@ -124,14 +133,13 @@ qualiity_server <- function(id, bd) {
     })
     
     output$plotPress <- renderDygraph({
-      
       req(getReactableState('press', 'selected'))
       
-      selected <- slice_head(bd, n = 1, by = event) %>%
+      selected <- slice_head(app_state$bd(), n = 1, by = event) %>%
         filter(row_number() == getReactableState('press', 'selected')) %>%
         pull(event)
       
-      bd %>%
+      app_state$bd() %>%
         filter(event == selected) %>%
         rowwise() %>%
         transmute(time = date_time, delta = mean(pt_310) - mean(pt_320)) %>%

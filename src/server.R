@@ -1,7 +1,17 @@
 options(shiny.maxRequestSize=30*1024^2) 
 
 server <- function(input, output) {
-  
+
+  app_state <- reactiveValues()
+
+  observe({
+    app_state$df <- df    
+    app_state$bd <- bd         
+    app_state$gc <- gc
+    app_state$ms <- ms
+    app_state$path <- path
+  }) %>% bindEvent(c(df(), bd(), gc(), ms(), path()))
+
   volumes <- c(Home = fs::path_home(),  getVolumes()())
   shinyDirChoose(input, "directory", roots = volumes)
 
@@ -16,11 +26,15 @@ server <- function(input, output) {
   
   df <- reactive({
     req(path())
-    grep("*.xlsx", dir(path(), full.names = T), value = TRUE) %>% load_file
+    tryCatch({
+      grep("*.xlsx", dir(path(), full.names = T), value = TRUE) %>% load_file
+    }, error = \(e) { NULL })
   })
   
   bd <- reactive({
-    df() %>% filter(n >= input$log_events)
+    tryCatch({
+      df() %>% filter(n >= input$log_events)
+    }, error = \(e) { NULL })
   })
 
   gc <- reactive({
@@ -37,29 +51,12 @@ server <- function(input, output) {
     }, error = \(e) { NULL })
   })
   
-  ## Log -----------------------------------------------------------------------
+  ## Pages -----------------------------------------------------------------------
   
-  observeEvent(ignoreInit = T, list(input$log_events, input$directory), {
-    log_server('log', bd = bd(), df = df())
-  })
-  
-  ## Quality control -----------------------------------------------------------
-  
-  observeEvent(ignoreInit = T, list(input$log_events, input$directory), {
-    qualiity_server('quality', bd())
-  }) 
-
-  ## Raw data --------------------------------------------------------------------
-
-  observeEvent(ignoreInit = T, list(input$log_events, input$directory), {
-    raw_server('raw', bd(), gc(), ms())
-  })
-  
-  ## Chemometric -----------------------------------------------------------------
-
-  observeEvent(ignoreInit = T, list(input$log_events, input$directory), {
-    chem_server('chem', bd(), gc(), path())
-  })
+  log_server('log', app_state)
+  quality_server('quality', app_state)
+  raw_server('raw', app_state)
+  chem_server('chem', app_state)
 
   ### Report -------------------------------------------------------------------
   
@@ -75,6 +72,5 @@ server <- function(input, output) {
       
       file.copy(file.path(tempdir(), 'report.html'), file)
     }
-  )
-  
-  }
+  )  
+}
