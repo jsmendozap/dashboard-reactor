@@ -31,7 +31,8 @@ ui <- dashboardPage(title = 'Experiment control',
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(log, quality, raw_data, chemometric),
+  dashboardBody(tabItems(log_ui('log'), quality_ui('quality'),
+                         raw_data_ui('raw'), chemometric_ui('chem')),
                 tags$head(includeCSS("www/custom.css")), 
                 reactable_extras_dependency())
 )

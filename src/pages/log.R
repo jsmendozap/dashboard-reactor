@@ -6,7 +6,11 @@ choices <- c("Air flow" = "fi_110",
              "Measured temperature" = "tic_300_pv",
              "Setted temperature" = "tic_300_sp")
 
-log <- tabItem(tabName = 'log',
+log_ui <- function(id){
+
+  ns <- NS(id)
+
+  tabItem(tabName = 'log',
                fluidRow(
                  column(
                    width = 8,
@@ -14,28 +18,28 @@ log <- tabItem(tabName = 'log',
                        status = 'info',
                        solidHeader = T,
                        width = 12,
-                       reactableOutput('log')
+                       reactableOutput(ns('log'))
                        )),
                  column(
                    width = 4,
                    box(title = "Leak test", width = 12,
                        status = 'info', solidHeader = T,
-                       uiOutput('leak')),
+                       uiOutput(ns('leak'))),
                    box(title = "Reactor's inflow",
                        status = 'info',
                        solidHeader = T,
                        width = 12,
-                       textOutput('valve'),
+                       textOutput(ns('valve')),
                        br(),
                        fluidRow(
                          column(
                            width = 6,
-                           valueBoxOutput("fi_110", width = 12),
-                           valueBoxOutput("fi_120", width = 12)),
+                           valueBoxOutput(ns("fi_110"), width = 12),
+                           valueBoxOutput(ns("fi_120"), width = 12)),
                          column(
                            width = 6,
-                           valueBoxOutput("fi_130", width = 12),
-                           valueBoxOutput("fi_140", width = 12))
+                           valueBoxOutput(ns("fi_130"), width = 12),
+                           valueBoxOutput(ns("fi_140"), width = 12))
                        )
                    )
                  )
@@ -46,22 +50,23 @@ log <- tabItem(tabName = 'log',
                    box(status = "info",
                        solidHeader = T,
                        width = 12,
-                       selectInput(inputId = 'var', label = 'Select variable',
+                       selectInput(inputId = ns('var'), label = 'Select variable',
                                    choices = choices),
                        div(id = 'legend', style = "margin-left: 5px"),
                        br(),
-                       dygraphOutput("dygraph", height = '45vh'))
+                       dygraphOutput(ns("dygraph"), height = '45vh'))
                  ),
                  column(
                    width = 6,
                    box(status = "info",
                        solidHeader = T,
                        width = 12,
-                       selectInput(inputId = 'var2', label = 'Select variable',
+                       selectInput(inputId = ns('var2'), label = 'Select variable',
                                    choices = choices),
                        div(id = 'legend2', style = "margin-left: 5px"),
                        br(),
-                       dygraphOutput("dygraph2", height = '45vh'))
+                       dygraphOutput(ns("dygraph2"), height = '45vh'))
                  )
                )
         )
+}
