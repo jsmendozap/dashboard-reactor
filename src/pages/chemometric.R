@@ -14,8 +14,8 @@ chemometric_ui <- function(id) {
                                 tabPanel(title = "Molar plot",
                                          fluidRow(
                                            column(width = 12, 
-                                                  plotlyOutput(ns('molar_flow'), height = '400px'))
-                                         )),
+                                                 plotlyOutput(ns('molar_flow'), height = '50%'))
+                                          )),
                                 tabPanel(title = "Box plot",
                                          fluidRow(
                                            column(width = 12, 

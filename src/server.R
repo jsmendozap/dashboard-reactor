@@ -68,7 +68,8 @@ server <- function(input, output) {
       file.copy("report.qmd", tempReport, overwrite = TRUE)
       
       quarto_render(input = tempReport, 
-                    execute_params = list(bd = bd()))
+                    execute_params = list(df = df(), bd = bd(), gc = gc(),
+                                          path = path()))
       
       file.copy(file.path(tempdir(), 'report.html'), file)
     }

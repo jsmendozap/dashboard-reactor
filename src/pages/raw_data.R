@@ -12,7 +12,7 @@ raw_data_ui <- function(id) {
                                    uiOutput(ns('gc_events')),
                                    uiOutput(ns('xgc'))),
                             column(width = 9, 
-                                   plotlyOutput(ns('composition'), height = '100vh'))
+                                   plotlyOutput(ns('composition'), height = '100%'))
                             )
                      ),
               tabPanel(title = "MS signals",
@@ -21,23 +21,24 @@ raw_data_ui <- function(id) {
                                    uiOutput(ns('xms')),
                                    uiOutput(ns('yms')),
                                    uiOutput(ns('ms_events')),
+                                   checkboxInput(ns('scale'), 'Same scale', TRUE),
                                    sliderInput(ns('smooth'), 'Smoothing level:',
                                           min = 0, max = 1, value = 0),
                                    uiOutput(ns("ms_int")),
                                    plotOutput(ns('int_plot'), height = '250px')
                                    ),
                             tabBox(
-                            id = "tabset3", height = "100%", width = 9,
+                            id = "tabset3", height = "80%", width = 9,
                             tabPanel(title = "General", 
                                    fluidRow(
                                    column(width = 12,
-                                          dygraphOutput(ns('msplot_gen'), height = '450px'))
+                                          dygraphOutput(ns('msplot_gen'), height = '380px'))
                                    )
                                    ),
                             tabPanel(title = "Events", 
                                    fluidRow(
                                    column(width = 12,
-                                          plotlyOutput(ns('msplot'), height = '100vh'))
+                                          plotlyOutput(ns('msplot'), height = '100%'))
                                    )
                             )
                             )

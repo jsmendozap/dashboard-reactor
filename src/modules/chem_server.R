@@ -2,6 +2,7 @@ chem_server <- function(id, app_state) {
   moduleServer(id, function(input, output, session) {
 
     ns <- NS(id)
+
     output$std <- renderReactable({
       req(app_state$bd)
 
@@ -60,12 +61,13 @@ chem_server <- function(id, app_state) {
       
       data.frame(
         event = sel_events(app_state$bd()$event, qis),
+        name = sel_events(app_state$bd()$name, qis),
         technique = reactiveValuesToList(tech) %>% unlist %>% discard(~.x == "None"),
         is = reactiveValuesToList(is) %>% unlist %>% discard(~.x == "None") %>% tolower,
         qis = reactiveValuesToList(qis) %>% unlist %>% as.numeric %>% discard(is.na)) %>%
         left_join(app_state$gc(), by = join_by('event')) %>%
         rowwise() %>%
-        mutate(across(9:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass)))) %>%
+        mutate(across(10:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass * 1000)))) %>%
         ungroup()
     })
     
@@ -100,6 +102,11 @@ chem_server <- function(id, app_state) {
       req(input$graph_compounds)
       req(input$graph_event)
       
+      names <- chem_values() %>%
+        summarise(name = unique(name), .by = event) %>%
+        mutate(name = str_c("Event: ", event, " - ", name)) %>%
+        {setNames(.$name, .$event)}
+
       plot <- chem_values() %>%
         select(event, time, 9:ncol(.)) %>%
         pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
@@ -108,15 +115,18 @@ chem_server <- function(id, app_state) {
         filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
         ggplot(aes(x = time, y = value, fill = Compound)) +
         geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
-        labs(x = 'Time (min)', y = "Molar flow (mmol/h)") +
-        facet_wrap(~event, scales = 'free', ncol = 2) +
+        labs(x = 'Time (min)', y = "Molar flow (mol/h)") +
+        facet_wrap(~event, scales = 'free', ncol = 2,
+                   labeller = as_labeller(names)) +
         theme_bw() +
         theme(axis.text = element_text(color = 'black', size = 10),
               axis.title = element_text(size = 12),
+              panel.spacing = unit(0.5, "cm"),
+              plot.margin = unit(c(0, 0, 2, 2), 'cm'),
               panel.background = element_rect(colour = 'black'))
       
-      ggplotly(plot, dynamicTicks = T, tooltip = "fill")
-      
+      total_height <- 180 * length(unique(chem_values()$event))
+      ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
 
   })

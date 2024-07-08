@@ -23,7 +23,7 @@ menu <- list(
 
 ui <- dashboardPage(title = 'Experiment control',
   dashboardHeader(title = dashboardBrand(
-    image = "https://media.licdn.com/dms/image/D4E0BAQFRTe4HelmdIA/company-logo_200_200/0/1706107028417/dusselier_lab_logo?e=1720051200&v=beta&t=sfFl9vN4z9mXj411z83IRsH6KmaWfuxWYfro3K2a218",
+    image = "https://www.dusselier-lab.org/uploads/media/cache/default/uploads/c1e65122e588fa60c0dabe8f2168cc4e.jpeg",
     title = span("Experiment control", style = "font-weight: bold; color: #6c757d")),
     div(textOutput('dir_header'), style = 'color: #6c757d; font-weight: bold')
   ),

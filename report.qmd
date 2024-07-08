@@ -6,12 +6,15 @@ format:
     toc: true
     self-contained: true
 params:
+  df: NA
   bd: NA
+  gc: NA
+  path: NA
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
-pacman::p_load(reactable, tidyverse, reactablefmtr)
+pacman::p_load(reactable, tidyverse, reactablefmtr, plotly, shiny)
 ```
 
 ```{r}
@@ -28,7 +31,34 @@ custom_reactable <- function(bd, ...){
 }
 ```
 
+::: {.callout-note}
+**Sample name**: `r params$path %>% as.character %>% strsplit('/') %>% unlist %>% {.[length(.)]}`
+:::
+
 ### Experiment description
+
+#### Leak test
+
+```{r}
+test <- params$df %>%
+          as_tibble() %>%
+          rowwise() %>%
+          mutate(sum = sum(fic_110, fic_120, fic_130, fic_140)) %>%
+          ungroup() %>%
+          filter(n > 5 & p_set != 0 & sum == 0) %>% 
+          select(event, n, p_set, sum, pt_310) %>%
+          filter(event == max(event)) %>%
+          slice(c(1, n())) %>% 
+          {c(event = unique(.$event), dif = .$pt_310[1] - .$pt_310[2])}
+
+if(!is.na(test[1])){
+  str_glue("Event: {test[1]} \nPressure difference: {round(test[2], 2)}")
+} else {
+  cat("No Leak test found in data")
+}
+```
+
+#### Log summary
 
 ```{r}
 params$bd %>%
@@ -46,80 +76,62 @@ params$bd %>%
       )
 ```
 
-### Quality control 
+#### Composition plot
 
-:::{.panel-tabset .column-body-outset}
+::: {.panel-tabset}
 
-#### Flows
-
+##### Time
 ```{r}
-params$bd %>%
+#| column: body-outset
+
+plot <- params$gc %>%
   as_tibble() %>%
-  summarise(across(.cols = c(2, 4, 6, 8),
-                   .fn = \(x) round(sum(x)/n(), 1)),
-            .by = event) %>%
-  select(-1) %>%
-  rowwise() %>%
-  mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
-  custom_reactable(
-    columns = list(
-      fi_110 = colDef(name = 'Air (mL/min)'),
-      fi_120 = colDef(name = 'Carbon dioxide (mL/min)'),
-      fi_130 = colDef(name = 'Argon / Propane (mL/min)'),
-      fi_140 = colDef(name = 'Nitrogen (mL/min)'),
-      total = colDef(name = 'Total flow (mL/min)')
-    ), 
-  )
+        select(-injection) %>%
+        pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+        mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title(),
+               time = as.numeric(time)) %>%
+        ggplot(aes(x = time, y = value, fill = Compound)) +
+          geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
+          geom_hline(yintercept = 100, linetype = 'dashed') +
+          labs(x = 'Reaction time (min)', y = "Composition") +
+          facet_wrap(~event, scales = 'free', ncol = 2) +
+          theme_bw() +
+          theme(axis.text = element_text(color = 'black', size = 10),
+                axis.title = element_text(size = 12),
+                panel.spacing = unit(1, "lines"),
+                panel.background = element_rect(colour = 'black'),
+                plot.margin = unit(c(0, 0, 2, 0), "cm"))
+
+total_height <- 180 * length(unique(params$gc$event))
+ggplotly(plot, width = 900, height = total_height)
 ```
 
-#### Temperature
+##### Temperature
 
 ```{r}
-params$bd %>%
-  as_tibble() %>%
-  summarise(name = name[1],
-            rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
-            mean_measure = mean(tic_300_pv),
-            mean_set = mean(tic_300_sp),
-            mean_r1 = mean(te_310),
-            mean_r2 = mean(te_320),
-            diff = list(tic_300_pv - te_320),
-            .by = event)  %>%
-  select(-1) %>%
-  mutate(across(.cols = 2:6, .fns = ~round(.x, 1))) %>%
-  custom_reactable(
-    columns = list(
-      name = colDef(name = 'Event', minWidth = 120),
-      rate = colDef(name = 'Rate of change'),
-      mean_measure = colDef(name = 'Avg. measured'),
-      mean_set = colDef(name = 'Avg. setted'),
-      mean_r1 = colDef(name = 'Avg. Reactor 1'),
-      mean_r2 = colDef(name = 'Avg. Reactor 2'))
-  )
-```
+#| column: body-outset
 
-#### Pressure
-
-```{r}
-params$bd %>%
+plot <- params$gc %>%
   as_tibble() %>%
-  summarise(name = name[1],
-                mean_set = mean(p_set),
-                mean_r1 = mean(pt_310),
-                mean_r2 = mean(pt_320),
-                delta = mean_r1 - mean_r2,
-                .by = event) %>%
-      select(-1) %>% 
-      mutate(across(.cols = 2:5, .fns = ~round(.x, 1))) %>%
-      custom_reactable(
-        columns = list(
-          name = colDef(name = 'Event', minWidth = 150),
-          mean_set = colDef(name = 'Avg. setted', minWidth = 80),
-          mean_r1 = colDef(name = 'Avg. Reactor 1', minWidth = 80),
-          mean_r2 = colDef(name = 'Avg. Reactor 2', minWidth = 80),
-          delta = colDef(name = 'Delta of pressure', minWidth = 80)
-        )
-      )
+        select(-injection) %>%
+        pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+        mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title(),
+               time = as.numeric(time)) %>%
+        ggplot(aes(x = tic_300_pv, y = value, fill = Compound)) +
+          geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
+          geom_hline(yintercept = 100, linetype = 'dashed') +
+          labs(x = 'Temperature (°C)', y = "Composition") +
+          facet_wrap(~event, scales = 'free', ncol = 2) +
+          theme_bw() +
+          theme(axis.text = element_text(color = 'black', size = 10),
+                axis.title = element_text(size = 12),
+                panel.spacing = unit(1, "lines"),
+                panel.background = element_rect(colour = 'black'),
+                plot.margin = unit(c(0, 0, 2, 0), "cm"))
+
+total_height <- 180 * length(unique(params$gc$event))
+ggplotly(plot, width = 900, height = total_height)
 ```
 
 :::
+

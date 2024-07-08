@@ -1,7 +1,14 @@
 raw_server <- function(id, app_state) {
   moduleServer(id, function(input, output, session) {
-
+    
     ns <- NS(id)
+    
+    names <- reactive({
+      app_state$bd() %>%
+      summarise(name = unique(name), .by = event) %>%
+      mutate(name = str_c("Event: ", event, " - ", name)) %>%
+      {setNames(.$name, .$event)}
+    })
 
     output$UIcompunds <- renderUI({
       req(app_state$gc)
@@ -39,7 +46,7 @@ raw_server <- function(id, app_state) {
     
     output$composition <- renderPlotly({
       req(input$gc_event)
-      
+
       plot <- app_state$gc() %>%
         select(-injection) %>%
         pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
@@ -50,14 +57,17 @@ raw_server <- function(id, app_state) {
         geom_hline(yintercept = 100, linetype = 'dashed') +
         labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
               y = "Composition") +
-        facet_wrap(~event, scales = 'free', ncol = 2) +
+        facet_wrap(~event, scales = 'free', ncol = 2,
+                   labeller = as_labeller(names())) +
         theme_bw() +
         theme(axis.text = element_text(color = 'black', size = 10),
               axis.title = element_text(size = 12),
+              panel.spacing = unit(1, "lines"),
+              plot.margin = unit(c(0, 0, 2, 0), 'cm'),
               panel.background = element_rect(colour = 'black'))
-    
-      ggplotly(plot, dynamicTicks = T, tooltip = "fill")
-        
+      
+      total_height <- 180 * length(unique(app_state$gc()$event))
+      ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")        
     })
   
     ## ms file -------------------------------------------------------------------------------------
@@ -135,15 +145,19 @@ raw_server <- function(id, app_state) {
         ggplot(aes(x = .data[[input$ms_xaxis]], y = value, color = Compound)) +
         geom_line() +
         labs(x = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
-              y = "Signal detected (a.m.u)") +
-        facet_wrap(~event, scales = 'free', ncol = 2) +
+              y = "Arbitrary unit (a.u)") +
+        facet_wrap(~event, scales = if_else(input$scale == TRUE, 'fixed', 'free'),
+                   ncol = 2, labeller = as_labeller(names())) +
         theme_bw()  +
         theme(axis.text = element_text(color = 'black', size = 10),
               axis.title = element_text(size = 12),
+              panel.spacing = unit(1, "lines"),
               panel.background = element_rect(colour = 'black'),
-              plot.margin = unit(c(0, 0, 0.2, 0.2), units = 'inches'))
+              plot.margin = unit(c(0, 0, 2, 2), units = 'cm'))
       
-      ggplotly(plot, dynamicTicks = T, tooltip = c('color', 'x', 'y'))
+      total_height <- 180 * length(unique(app_state$ms()$event))
+      ggplotly(plot, height = total_height,
+               dynamicTicks = T, tooltip = c('color', 'x', 'y'))
     })
     
     fit <- reactive({
@@ -178,5 +192,5 @@ raw_server <- function(id, app_state) {
       plot(x = fit()$x, y = fit()$y, type = 'l',
             bty = 'n', xlab = '', ylab = '')
     })
-  }
+    }
 )}

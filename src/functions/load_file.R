@@ -14,7 +14,7 @@ load_file <- function(file){
     mutate(date_time = dmy_hms(date_time), across(2:ncol(.), as.numeric), 
            across(.cols = c(2, 4, 6, 8), .fns = ~ifelse(.x < 0, 0, .x))) %>% 
     rename(p_set = pressure_sp_history_out) %>% 
-    group_by(event = assign_event(fic_110, fic_120, fic_130, fic_140, rswitch_val)) %>%
+    group_by(event = assign_event(fic_110, fic_120, fic_130, fic_140, rswitch_val, p_set)) %>%
     mutate(n = n(), time_duration = pretty_sec(n() * 60)) %>%
     ungroup() %>%
     rowwise() %>%

@@ -1,6 +1,6 @@
 ### Split and label events in file ---------------------------------------------
 
-assign_event <- function(air, co2, ar, n2, val){
+assign_event <- function(air, co2, ar, n2, val, p){
   event_count <- rep(NA, length(n2))
   event <- 0
   
@@ -23,7 +23,11 @@ assign_event <- function(air, co2, ar, n2, val){
       
         event <- event + 1
         event_count[i] = event
-    }
+    } else if(p[i] != p[i - 1]) {
+
+      event <- event + 1
+      event_count[i] = event
+    } 
   }
   
   data.frame(event = event_count) %>% fill(event) %>% pull(event)

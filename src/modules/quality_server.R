@@ -101,7 +101,7 @@ quality_server <- function(id, app_state) {
         mutate(difference = tic_300_pv - te_320) %>%
         ggplot() +
         geom_line(aes(x = te_310, y = difference), linewidth = 0.2) +
-        facet_wrap(~event, scales = 'free') +
+        facet_wrap(~event, scales = 'fixed') +
         labs(x = "Temperature (°C)", y = "Temperature differences (°C)") +
         theme_bw() +
         theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
