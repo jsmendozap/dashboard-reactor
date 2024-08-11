@@ -12,6 +12,7 @@ menu <- list(
         span('minutes', sytle = 'margin-left: 5px'),
         style = 'display: flex; align-items: center; margin-top: 0'
       ),               
+      menuItem("Reaction settings", tabName = "reaction", icon = icon("flask-vial", style = "margin-right: 5px")),
       menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
       menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
       menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px")),
@@ -31,7 +32,7 @@ ui <- dashboardPage(title = 'Experiment control',
     collapsed = F, minified = F, sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(log_ui('log'), quality_ui('quality'),
+  dashboardBody(tabItems(reaction_ui('reaction'), log_ui('log'), quality_ui('quality'),
                          raw_data_ui('raw'), chemometric_ui('chem')),
                 tags$head(includeCSS("www/custom.css")), 
                 reactable_extras_dependency())

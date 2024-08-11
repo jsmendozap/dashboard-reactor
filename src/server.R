@@ -53,6 +53,7 @@ server <- function(input, output) {
   
   ## Pages -----------------------------------------------------------------------
   
+  reaction_server('reaction')
   log_server('log', app_state)
   quality_server('quality', app_state)
   raw_server('raw', app_state)
@@ -66,9 +67,10 @@ server <- function(input, output) {
     content = function(file) {
       tempReport <- file.path(tempdir(), "report.qmd")
       file.copy("report.qmd", tempReport, overwrite = TRUE)
-      
+
       quarto_render(input = tempReport, 
                     execute_params = list(df = df(), bd = bd(), gc = gc(),
+                                          ms = ms() %>% mutate(time_absolute_date_time = as.character(time_absolute_date_time)),
                                           path = path()))
       
       file.copy(file.path(tempdir(), 'report.html'), file)

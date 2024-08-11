@@ -122,6 +122,7 @@ raw_server <- function(id, app_state) {
         dygraph(xlab = ifelse(input$ms_xaxis == 'tic_300_pv',
                               'Temperature (°C)', 'Reaction Time (min)')) 
       
+      
       dySeriesData(data, 'plot', input$ms_yaxis) %>%
         dyRangeSelector() %>%
         dyOptions(useDataTimezone = TRUE) %>%

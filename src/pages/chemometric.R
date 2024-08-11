@@ -19,7 +19,7 @@ chemometric_ui <- function(id) {
                                 tabPanel(title = "Box plot",
                                          fluidRow(
                                            column(width = 12, 
-                                                  plotOutput(ns('boxplot'), height = '50vh'))
+                                                  plotlyOutput(ns('boxplot'), height = '50%'))
                                          ))
                           )
                        )

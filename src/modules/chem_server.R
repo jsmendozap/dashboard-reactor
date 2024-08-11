@@ -48,6 +48,11 @@ chem_server <- function(id, app_state) {
       qis[[name]] <- input$qis$value
     })
     
+    mass <- reactive({
+      app_state$path() %>% as.character %>% strsplit(" ") %>%
+      unlist %>% {.[length(.) - 1]} %>% as.numeric(.)/1000000
+    })
+    
     chem_values <- eventReactive(input$btn_flow, {
       
       sel_events <- function(x, qis) {
@@ -55,10 +60,7 @@ chem_server <- function(id, app_state) {
         filter <- reactiveValuesToList(qis) %>% unlist %>% discard(\(x) nchar(x) == 0) %>% names %>% as.numeric
         events[filter]
       }
-      
-      mass <- app_state$path() %>% as.character %>% strsplit(" ") %>%
-        unlist %>% {.[length(.) - 1]} %>% as.numeric(.)/1000000
-      
+        
       data.frame(
         event = sel_events(app_state$bd()$event, qis),
         name = sel_events(app_state$bd()$name, qis),
@@ -67,7 +69,7 @@ chem_server <- function(id, app_state) {
         qis = reactiveValuesToList(qis) %>% unlist %>% as.numeric %>% discard(is.na)) %>%
         left_join(app_state$gc(), by = join_by('event')) %>%
         rowwise() %>%
-        mutate(across(10:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass * 1000)))) %>%
+        mutate(across(10:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass() * 1000)))) %>%
         ungroup()
     })
     
@@ -95,8 +97,8 @@ chem_server <- function(id, app_state) {
         choices = selected, multiple = TRUE, selected = selected,
         options = list(`actions-box` = TRUE, `live-search` = TRUE)
       )
-    })
-    
+      })
+      
     output$molar_flow <- renderPlotly({
       req(chem_values())
       req(input$graph_compounds)
@@ -116,7 +118,7 @@ chem_server <- function(id, app_state) {
         ggplot(aes(x = time, y = value, fill = Compound)) +
         geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
         labs(x = 'Time (min)', y = "Molar flow (mol/h)") +
-        facet_wrap(~event, scales = 'free', ncol = 2,
+        facet_wrap(~event, scales = 'fixed', ncol = 2,
                    labeller = as_labeller(names)) +
         theme_bw() +
         theme(axis.text = element_text(color = 'black', size = 10),
@@ -127,6 +129,65 @@ chem_server <- function(id, app_state) {
       
       total_height <- 180 * length(unique(chem_values()$event))
       ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
+    })
+
+    output$boxplot <- renderPlotly({
+  
+      avgs <- ddply(.data = chem_values() %>% filter(technique == 'By Pass'),
+                    .variables =  'event',
+                    .fun = \(x) {
+                      mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
+  
+                      x %>%
+                        summarise(technique = unique(technique),
+                                  co2 = mean_flow(carbon_dioxide),
+                                  propane = mean_flow(propane))
+            })
+            
+      bypass <- chem_values() %>%
+        select(event, technique) %>%
+        distinct() %>%
+        filter(technique %in% c('By Pass', 'TOS')) %>%
+        left_join(avgs) %>%
+        fill(co2, propane, .direction = 'down') %>%
+        transmute(event, technique, co2_bypass = co2, propane_bypass = propane)
+  
+      names <- chem_values() %>%
+        filter(technique == 'TOS') %>%
+        summarise(name = unique(name), .by = event) %>%
+        mutate(name = str_c("Event: ", event, " - ", name)) %>%
+        {setNames(.$name, .$event)}
+
+      box <- chem_values() %>%
+        filter(technique == 'TOS') %>%
+        left_join(bypass) %>%
+        mutate(carbon_dioxide = carbon_dioxide - co2_bypass,
+               propane = propane - propane_bypass) %>%
+        select(event, 10:ncol(.), -c(co2_bypass, propane_bypass)) %>%
+        pivot_longer(cols = 2:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+        filter(!Compound %in% c('argon', 'nitrogen')) %>%
+        mutate(Compound = str_replace_all(Compound, '_', ' ') %>% str_to_title()) %>%
+        filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
+        #group_by(Compound, event) %>%
+        #filter(!value %in% boxplot.stats(value)$out) %>%
+        #ungroup %>%
+        ggplot(aes(x = Compound, y = value, fill = Compound)) +
+        geom_boxplot() +
+        stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +
+        stat_summary(fun = min, geom = "point", shape = 25) +
+        stat_summary(fun = max, geom = "point", shape = 19) +
+        labs(x = '', y = "Molar flow (mol/h)") +
+        facet_wrap(~event, scales = 'fixed', ncol = 2, labeller = as_labeller(names)) +
+        theme_bw() +
+        theme(axis.text.y = element_text(color = 'black', size = 10),
+              axis.title.y = element_text(size = 12),
+              panel.background = element_rect(colour = 'black'),
+              axis.title.x = element_blank(),
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank())
+      
+      total_height <- 180 * length(unique(chem_values()$event))/2
+      ggplotly(box, height = total_height)
     })
 
   })

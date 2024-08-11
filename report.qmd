@@ -9,12 +9,23 @@ params:
   df: NA
   bd: NA
   gc: NA
+  ms: NA
   path: NA
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
-pacman::p_load(reactable, tidyverse, reactablefmtr, plotly, shiny)
+pacman::p_load(reactable, tidyverse, reactablefmtr, plotly, dygraphs)
+```
+
+```{css}
+.dygraphs.html-widget.html-fill-item.html-widget-static-bound {
+  overflow: hidden;
+}
+
+.plotly.html-widget.html-widget-static-bound.js-plotly-plot {
+  height: auto !important; 
+}
 ```
 
 ```{r}
@@ -125,6 +136,7 @@ plot <- params$gc %>%
           theme_bw() +
           theme(axis.text = element_text(color = 'black', size = 10),
                 axis.title = element_text(size = 12),
+                axis.title.x = element_text(margin = margin(t = 15)),
                 panel.spacing = unit(1, "lines"),
                 panel.background = element_rect(colour = 'black'),
                 plot.margin = unit(c(0, 0, 2, 0), "cm"))
@@ -135,3 +147,22 @@ ggplotly(plot, width = 900, height = total_height)
 
 :::
 
+#### Mass detector
+
+```{r}
+#| column: body-outset
+
+data <- params$ms %>%
+        as_tibble() %>%
+        select(time_absolute_date_time, `2_amu_hydrogen`, `18_amu_water`, `44_amu_co2_c3h8`) %>%
+        mutate(time_absolute_date_time = as.POSIXct(time_absolute_date_time, origin="1970-01-01", tz="UTC"),
+               across(.cols = contains('amu'),
+                      .fns = ~smooth.spline(.x, spar = 0)$y)) %>%
+        rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) 
+
+dygraph(data, xlab = 'Reaction Time (min)') %>%
+  dyRangeSelector() %>%
+  dyLegend(width = 800) %>%
+  dyOptions(useDataTimezone = TRUE) %>%
+  dyOptions(strokeWidth = 2)
+```
