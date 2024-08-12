@@ -20,6 +20,10 @@
   width: 150px;
 }
 
+.dropdown-item.active, .dropdown-item:active  {
+  background-color: #bfb0bb;
+}
+
 .text-input {
   border: none;
   width: 50px;
