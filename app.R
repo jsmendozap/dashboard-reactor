@@ -5,7 +5,8 @@ if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'h
 
 pacman::p_load(
     quarto, plyr, tidyverse, readxl, janitor, dygraphs, shinyWidgets, bs4Dash,
-    shiny, prettyunits, plotly, zoo, reactable, reactable.extras, shinyFiles 
+    shiny, prettyunits, plotly, zoo, reactable, reactable.extras, shinyFiles,
+    duckdb, DBI
 )
 
 if (.Platform$OS.type == "windows") {
@@ -14,5 +15,6 @@ if (.Platform$OS.type == "windows") {
 }
 
 cat("Running application\n")
-walk(.x = dir('src', '*.R', full.names = T, recursive = T), .f = source)
-shinyApp(ui, server)
+purrr::walk(.x = dir('src', '*.R', full.names = T, recursive = T), .f = source)
+db_setup()
+shiny::shinyApp(ui, server)

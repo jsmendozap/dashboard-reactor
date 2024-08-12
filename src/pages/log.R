@@ -8,64 +8,64 @@ choices <- c("Air flow" = "fi_110",
 
 log_ui <- function(id){
 
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  tabItem(tabName = 'log',
-               fluidRow(
-                 column(
+  bs4Dash::tabItem(tabName = 'log',
+               shiny::fluidRow(
+                 bs4Dash::column(
                    width = 8,
-                   box(title = "Events summary",
+                   bs4Dash::box(title = "Events summary",
                        status = 'info',
                        solidHeader = T,
                        width = 12,
-                       reactableOutput(ns('log'))
+                       reactable::reactableOutput(ns('log'))
                        )),
-                 column(
+                 bs4Dash::column(
                    width = 4,
-                   box(title = "Leak test", width = 12,
+                   bs4Dash::box(title = "Leak test", width = 12,
                        status = 'info', solidHeader = T,
-                       uiOutput(ns('leak'))),
-                   box(title = "Reactor's inflow",
+                       shiny::uiOutput(ns('leak'))),
+                   bs4Dash::box(title = "Reactor's inflow",
                        status = 'info',
                        solidHeader = T,
                        width = 12,
-                       textOutput(ns('valve')),
-                       br(),
-                       fluidRow(
-                         column(
+                       shiny::textOutput(ns('valve')),
+                       shiny::br(),
+                       shiny::fluidRow(
+                         bs4Dash::column(
                            width = 6,
-                           valueBoxOutput(ns("fi_110"), width = 12),
-                           valueBoxOutput(ns("fi_120"), width = 12)),
-                         column(
+                           bs4Dash::valueBoxOutput(ns("fi_110"), width = 12),
+                           bs4Dash::valueBoxOutput(ns("fi_120"), width = 12)),
+                         bs4Dash::column(
                            width = 6,
-                           valueBoxOutput(ns("fi_130"), width = 12),
-                           valueBoxOutput(ns("fi_140"), width = 12))
+                           bs4Dash::valueBoxOutput(ns("fi_130"), width = 12),
+                           bs4Dash::valueBoxOutput(ns("fi_140"), width = 12))
                        )
                    )
                  )
                  ),
-               fluidRow(
-                 column(
+               shiny::fluidRow(
+                 bs4Dash::column(
                    width = 6,
-                   box(status = "info",
+                   bs4Dash::box(status = "info",
                        solidHeader = T,
                        width = 12,
-                       selectInput(inputId = ns('var'), label = 'Select variable',
+                       shiny::selectInput(inputId = ns('var'), label = 'Select variable',
                                    choices = choices),
-                       div(id = 'legend', style = "margin-left: 5px"),
-                       br(),
-                       dygraphOutput(ns("dygraph"), height = '45vh'))
+                       shiny::div(id = 'legend', style = "margin-left: 5px"),
+                       shiny::br(),
+                       dygraphs::dygraphOutput(ns("dygraph"), height = '45vh'))
                  ),
-                 column(
+                 bs4Dash::column(
                    width = 6,
-                   box(status = "info",
+                   bs4Dash::box(status = "info",
                        solidHeader = T,
                        width = 12,
-                       selectInput(inputId = ns('var2'), label = 'Select variable',
+                       shiny::selectInput(inputId = ns('var2'), label = 'Select variable',
                                    choices = choices),
-                       div(id = 'legend2', style = "margin-left: 5px"),
-                       br(),
-                       dygraphOutput(ns("dygraph2"), height = '45vh'))
+                       shiny::div(id = 'legend2', style = "margin-left: 5px"),
+                       shiny::br(),
+                       dygraphs::dygraphOutput(ns("dygraph2"), height = '45vh'))
                  )
                )
         )

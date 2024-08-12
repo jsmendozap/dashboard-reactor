@@ -1,9 +1,9 @@
 reaction_server <- function(id) {
-  moduleServer(id, function(input, output, session){
-  
-    ns <- NS(id)
-    table <- reactiveVal(
-      tibble(
+  shiny::moduleServer(id, function(input, output, session){
+
+    ns <- shiny::NS(id)
+    table <- shiny::reactiveVal(
+      dplyr::tibble(
         ID = numeric(),
         Compound = character(),
         Type = character(),
@@ -13,10 +13,10 @@ reaction_server <- function(id) {
         MFC_4 = numeric()
       )
     )
-    
-    observeEvent(input$new, {
+
+    shiny::observeEvent(input$new, {
       table() %>%
-        add_row(
+        dplyr::add_row(
           ID = 1,
           Compound = input$compound,
           Type = input$c_type,
@@ -25,17 +25,21 @@ reaction_server <- function(id) {
           MFC_3 = input$mfc3,
           MFC_4 = input$mfc4,
         ) %>%
-        mutate(ID = row_number()) %>%
+        dplyr::mutate(ID = dplyr::row_number()) %>%
         table()
+
+      purrr::map(.x = c("mfc1", "mfc2", "mfc3", "mfc4"),
+                 .f = ~shiny::updateNumericInput(session, .x, value = NA))
+      shiny::updateTextInput(session, "compound", value = "")
     })
-    
-    output$compounds_table <- renderReactable({
+
+    output$compounds_table <- reactable::renderReactable({
       table() %>%
-        rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('MFC')) %>%
-        custom_reactable(columns = list(Compound = colDef(minWidth = 250)),
+        dplyr::rename_with(.fn = ~stringr::str_replace_all(.x, '_', ' '), .cols = dplyr::contains('MFC')) %>%
+        custom_reactable(columns = list(Compound = reactable::colDef(minWidth = 250)),
                          style = "border-radius: 3px"
                         )
     })
-    
+
   })
 }

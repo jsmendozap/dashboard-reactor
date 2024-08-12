@@ -1,39 +1,39 @@
 menu <- list(
-      br(),
-      shinyDirButton("directory", "Select folder",
+      shiny::br(),
+      shinyFiles::shinyDirButton("directory", "Select folder",
                      "Please select folder containing reactor, gc and ms files",
-                     icon = icon('folder', style = 'margin-right: 5px'),
+                     icon = shiny::icon('folder', style = 'margin-right: 5px'),
                      style = 'background-color: white'),
-      span("Event's minimum duration", style = 'padding-bottom: 0px; font-weight: bold; display: flex; justify-content: center'),
-      div(
-        numericInput(inputId = 'log_events', 
+      shiny::span("Event's minimum duration", style = 'padding-bottom: 0px; font-weight: bold; display: flex; justify-content: center'),
+      shiny::div(
+        shiny::numericInput(inputId = 'log_events',
                    label = NULL,
                    min = 0, max = 1440, value = 0, width = 150),
-        span('minutes', sytle = 'margin-left: 5px'),
+        shiny::span('minutes', sytle = 'margin-left: 5px'),
         style = 'display: flex; align-items: center; margin-top: 0'
-      ),               
-      menuItem("Reaction settings", tabName = "reaction", icon = icon("flask-vial", style = "margin-right: 5px")),
-      menuItem("Log summary", tabName = "log", icon = icon("book", style = "margin-right: 5px")),
-      menuItem("Quality control", tabName = "quality", icon = icon("stopwatch", style = "margin-right: 5px")),
-      menuItem("Raw data", tabName = "raw-data", icon = icon("file-lines", style = "margin-right: 5px")),
-      menuItem("Chemometric", tabName = "chemometric", icon = icon("calculator", style = "margin-right: 5px")),  
-      br(), downloadButton('report', 'Generate report',
+      ),
+      bs4Dash::menuItem("Reaction settings", tabName = "reaction", icon = shiny::icon("flask-vial", style = "margin-right: 5px")),
+      bs4Dash::menuItem("Log summary", tabName = "log", icon = shiny::icon("book", style = "margin-right: 5px")),
+      bs4Dash::menuItem("Quality control", tabName = "quality", icon = shiny::icon("stopwatch", style = "margin-right: 5px")),
+      bs4Dash::menuItem("Raw data", tabName = "raw-data", icon = shiny::icon("file-lines", style = "margin-right: 5px")),
+      bs4Dash::menuItem("Chemometric", tabName = "chemometric", icon = shiny::icon("calculator", style = "margin-right: 5px")),
+      shiny::br(), shiny::downloadButton('report', 'Generate report',
                            style = 'background-color: white',
-                           icon = icon('download', style = 'margin-right: 5px'))
+                           icon = shiny::icon('download', style = 'margin-right: 5px'))
   )
 
-ui <- dashboardPage(title = 'Experiment control',
-  dashboardHeader(title = dashboardBrand(
+ui <- bs4Dash::dashboardPage(title = 'Experiment control',
+  bs4Dash::dashboardHeader(title = bs4Dash::dashboardBrand(
     image = "https://www.dusselier-lab.org/uploads/media/cache/default/uploads/c1e65122e588fa60c0dabe8f2168cc4e.jpeg",
-    title = span("Experiment control", style = "font-weight: bold; color: #6c757d")),
-    div(textOutput('dir_header'), style = 'color: #6c757d; font-weight: bold')
+    title = shiny::span("Experiment control", style = "font-weight: bold; color: #6c757d")),
+    shiny::div(shiny::textOutput('dir_header'), style = 'color: #6c757d; font-weight: bold')
   ),
-  dashboardSidebar(
-    collapsed = F, minified = F, sidebarMenu(menu),
+  bs4Dash::dashboardSidebar(
+    collapsed = F, minified = F, bs4Dash::sidebarMenu(menu),
     status = "info", elevation = 2
   ),
-  dashboardBody(tabItems(reaction_ui('reaction'), log_ui('log'), quality_ui('quality'),
+  bs4Dash::dashboardBody(bs4Dash::tabItems(reaction_ui('reaction'), log_ui('log'), quality_ui('quality'),
                          raw_data_ui('raw'), chemometric_ui('chem')),
-                tags$head(includeCSS("www/custom.css")), 
-                reactable_extras_dependency())
+                         tags$head(shiny::includeCSS("www/custom.css")),
+                         reactable.extras::reactable_extras_dependency())
 )

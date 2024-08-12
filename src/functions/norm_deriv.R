@@ -3,7 +3,7 @@
 norm_deriv <- function(col){
   index <- which(diff(col) < -1)
   new <- col[1:index[1]]
-  
+
   for (i in 2:(length(index) + 1)){
     value <- sum(col[index[1:i - 1]])
     if (i == (length(index) + 1)){

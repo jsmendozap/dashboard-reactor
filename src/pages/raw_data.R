@@ -1,44 +1,44 @@
 raw_data_ui <- function(id) {
-       
-       ns <- NS(id)
-       
-       tabItem(tabName = "raw-data",
-              tabBox(
+
+       ns <- shiny::NS(id)
+
+       bs4Dash::tabItem(tabName = "raw-data",
+              bs4Dash::tabBox(
               id = "tabset2", height = "100%", width = 12,
-              tabPanel(title = "GC composition",
-                     fluidRow(
-                            column(width = 3,
-                                   uiOutput(ns('UIcompunds')),
-                                   uiOutput(ns('gc_events')),
-                                   uiOutput(ns('xgc'))),
-                            column(width = 9, 
-                                   plotlyOutput(ns('composition'), height = '100%'))
+              shiny::tabPanel(title = "GC composition",
+                     shiny::fluidRow(
+                            bs4Dash::column(width = 3,
+                                   shiny::uiOutput(ns('UIcompunds')),
+                                   shiny::uiOutput(ns('gc_events')),
+                                   shiny::uiOutput(ns('xgc'))),
+                            bs4Dash::column(width = 9,
+                                   plotly::plotlyOutput(ns('composition'), height = '100%'))
                             )
                      ),
-              tabPanel(title = "MS signals",
-                     fluidRow(
-                            column(width = 3,
-                                   uiOutput(ns('xms')),
-                                   uiOutput(ns('yms')),
-                                   uiOutput(ns('ms_events')),
-                                   checkboxInput(ns('scale'), 'Same scale', TRUE),
-                                   sliderInput(ns('smooth'), 'Smoothing level:',
+              shiny::tabPanel(title = "MS signals",
+                     shiny::fluidRow(
+                            bs4Dash::column(width = 3,
+                                   shiny::uiOutput(ns('xms')),
+                                   shiny::uiOutput(ns('yms')),
+                                   shiny::uiOutput(ns('ms_events')),
+                                   shiny::checkboxInput(ns('scale'), 'Same scale', TRUE),
+                                   shiny::sliderInput(ns('smooth'), 'Smoothing level:',
                                           min = 0, max = 1, value = 0),
-                                   uiOutput(ns("ms_int")),
-                                   plotOutput(ns('int_plot'), height = '250px')
+                                   shiny::uiOutput(ns("ms_int")),
+                                   shiny::plotOutput(ns('int_plot'), height = '250px')
                                    ),
-                            tabBox(
+                            bs4Dash::tabBox(
                             id = "tabset3", height = "80%", width = 9,
-                            tabPanel(title = "General", 
-                                   fluidRow(
-                                   column(width = 12,
-                                          dygraphOutput(ns('msplot_gen'), height = '380px'))
+                            shiny::tabPanel(title = "General",
+                                   shiny::fluidRow(
+                                   bs4Dash::column(width = 12,
+                                          dygraphs::dygraphOutput(ns('msplot_gen'), height = '380px'))
                                    )
                                    ),
-                            tabPanel(title = "Events", 
-                                   fluidRow(
-                                   column(width = 12,
-                                          plotlyOutput(ns('msplot'), height = '100%'))
+                            shiny::tabPanel(title = "Events",
+                                   shiny::fluidRow(
+                                   bs4Dash::column(width = 12,
+                                          plotly::plotlyOutput(ns('msplot'), height = '100%'))
                                    )
                             )
                             )
@@ -46,4 +46,4 @@ raw_data_ui <- function(id) {
                      )
               )
               )
-}       
+}

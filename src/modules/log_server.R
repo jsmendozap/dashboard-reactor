@@ -1,82 +1,82 @@
 log_server <- function(id, app_state) {
-  moduleServer(id, function(input, output, session){
+  shiny::moduleServer(id, function(input, output, session){
 
-    selected1 <- reactive({ input$var })
-    selected2 <- reactive({ input$var2 })
-    
-    output$dygraph <- renderDygraph({ 
-      req(app_state$bd)
-      renderdy(app_state$bd(), selected1(), input, 'legend') 
+    selected1 <- shiny::reactive({ input$var })
+    selected2 <- shiny::reactive({ input$var2 })
+
+    output$dygraph <- dygraphs::renderDygraph({
+      shiny::req(app_state$bd)
+      renderdy(app_state$bd(), selected1(), input, 'legend')
     })
-    
-    output$dygraph2 <- renderDygraph({
-      req(app_state$bd)
-      renderdy(app_state$bd(), selected2(), input, 'legend2') 
+
+    output$dygraph2 <- dygraphs::renderDygraph({
+      shiny::req(app_state$bd)
+      renderdy(app_state$bd(), selected2(), input, 'legend2')
     })
-    
-    output$log <- renderReactable({
-      req(app_state$bd)
+
+    output$log <- reactable::renderReactable({
+      shiny::req(app_state$bd)
 
       app_state$bd() %>%
-        slice_head(n = 1, by = event) %>%
-        select(event, date_time, name, time_duration) %>%
+        dplyr::slice_head(n = 1, by = event) %>%
+        dplyr::select(event, date_time, name, time_duration) %>%
         custom_reactable(
           columns = list(
-            event = colDef(name = 'Event', width = 100),
-            date_time = colDef(name = 'Start time', width = 200),
-            name = colDef(name = 'Event name', minWidth = 200),
-            time_duration = colDef(name = 'Duration', width = 100)
+            event = reactable::colDef(name = 'Event', width = 100),
+            date_time = reactable::colDef(name = 'Start time', width = 200),
+            name = reactable::colDef(name = 'Event name', minWidth = 200),
+            time_duration = reactable::colDef(name = 'Duration', width = 100)
           ), selection = 'single'
         )
     })
-  
-    output$leak <- renderUI({
-      req(app_state$df)
-  
+
+    output$leak <- shiny::renderUI({
+      shiny::req(app_state$df)
+
       test <- app_state$df() %>%
-        rowwise() %>%
-        mutate(sum = sum(fic_110, fic_120, fic_130, fic_140)) %>%
-        ungroup() %>%
-        filter(n > 5 & p_set != 0 & sum == 0) %>% 
-        select(event, n, p_set, sum, pt_310) %>%
-        filter(event == max(event)) %>%
-        slice(c(1, n())) %>% 
+        dplyr::rowwise() %>%
+        dplyr::mutate(sum = sum(fic_110, fic_120, fic_130, fic_140)) %>%
+        dplyr::ungroup() %>%
+        dplyr::filter(n > 5 & p_set != 0 & sum == 0) %>%
+        dplyr::select(event, n, p_set, sum, pt_310) %>%
+        dplyr::filter(event == max(event)) %>%
+        dplyr::slice(c(1, n())) %>%
         {c(event = unique(.$event), dif = .$pt_310[1] - .$pt_310[2])}
-  
-      renderPrint({ 
+
+      shiny::renderPrint({
         if(!is.na(test[1])){
-          str_glue("Event: {test[1]} \nPressure difference: {round(test[2], 2)}")
+          stringr::str_glue("Event: {test[1]} \nPressure difference: {round(test[2], 2)}")
         } else {
           cat("No Leak test found in data")
         }
        })
     })
-    
-    output$valve <- renderText({
-      req(getReactableState('log', 'selected'))
-      
-      sel <- getReactableState('log', 'selected')
+
+    output$valve <- shiny::renderText({
+      shiny::req(reactable::getReactableState('log', 'selected'))
+
+      sel <- reactable::getReactableState('log', 'selected')
       pos <- app_state$bd() %>%
-        slice_head(n = 1, by = event) %>%
-        pull(rswitch_val)
-      
+        dplyr::slice_head(n = 1, by = event) %>%
+        dplyr::pull(rswitch_val)
+
       paste('Valve position:', pos[sel])
     })
-    
-    output$fi_110 <- renderValueBox({
+
+    output$fi_110 <- bs4Dash::renderValueBox({
       reactor_values(app_state$bd(), 'fi_110', 'Air')
     })
-    
-    output$fi_120 <- renderValueBox({
+
+    output$fi_120 <- bs4Dash::renderValueBox({
       reactor_values(app_state$bd(), 'fi_120', 'Carbon dioxide')
     })
-    
-    output$fi_130 <- renderValueBox({
+
+    output$fi_130 <- bs4Dash::renderValueBox({
       reactor_values(app_state$bd(), 'fi_130', 'Argon / Propane')
     })
-    
-    output$fi_140 <- renderValueBox({
+
+    output$fi_140 <- bs4Dash::renderValueBox({
       reactor_values(app_state$bd(), 'fi_140', 'Nitrogen')
-    })   
+    })
   })
 }

@@ -1,25 +1,25 @@
 chemometric_ui <- function(id) {
 
-       ns <- NS(id)
+       ns <- shiny::NS(id)
 
-       tabItem(tabName = "chemometric",
-                       fluidRow(reactableOutput(ns('std'), width = '100%')),
-                       br(),
-                       fluidRow(
-                         column(width = 3,
-                                uiOutput(ns('flow_compounds')),
-                                uiOutput(ns('flow_events')),
-                                actionButton(ns('btn_flow'), label = 'Calculate flows')),
-                         tabBox(width = 9,
-                                tabPanel(title = "Molar plot",
-                                         fluidRow(
-                                           column(width = 12, 
-                                                 plotlyOutput(ns('molar_flow'), height = '50%'))
+       bs4Dash::tabItem(tabName = "chemometric",
+                       shiny::fluidRow(reactable::reactableOutput(ns('std'), width = '100%')),
+                       shiny::br(),
+                       shiny::fluidRow(
+                         bs4Dash::column(width = 3,
+                                shiny::uiOutput(ns('flow_compounds')),
+                                shiny::uiOutput(ns('flow_events')),
+                                bs4Dash::actionButton(ns('btn_flow'), label = 'Calculate flows')),
+                         bs4Dash::tabBox(width = 9,
+                                shiny::tabPanel(title = "Molar plot",
+                                         shiny::fluidRow(
+                                           bs4Dash::column(width = 12,
+                                                 plotly::plotlyOutput(ns('molar_flow'), height = '50%'))
                                           )),
-                                tabPanel(title = "Box plot",
-                                         fluidRow(
-                                           column(width = 12, 
-                                                  plotlyOutput(ns('boxplot'), height = '50%'))
+                                shiny::tabPanel(title = "Box plot",
+                                         shiny::fluidRow(
+                                           bs4Dash::column(width = 12,
+                                                  plotly::plotlyOutput(ns('boxplot'), height = '50%'))
                                          ))
                           )
                        )

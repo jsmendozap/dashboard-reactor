@@ -4,6 +4,6 @@ conditional_color <- function(value) {
   } else {
     color <- "lightgreen"
   }
-  
+
   list(color = color, fontWeight = 'bold')
 }

@@ -1,153 +1,152 @@
 quality_server <- function(id, app_state) {
-  moduleServer(id, function(input, output, session) {
-    
-    output$flow <- renderReactable({
-      req(app_state$bd)
+  shiny::moduleServer(id, function(input, output, session) {
 
-      app_state$bd() %>% 
-        summarise(across(.cols = c(2, 4, 6, 8),
-                         .fn = \(x) round(sum(x)/n(), 1)),
+    output$flow <- reactable::renderReactable({
+      shiny::req(app_state$bd)
+
+      app_state$bd() %>%
+        dplyr::summarise(across(.cols = c(2, 4, 6, 8),
+                         .fn = \(x) round(sum(x)/dplyr::n(), 1)),
                   .by = event) %>%
-        rowwise() %>%
-        mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
+        dplyr::rowwise() %>%
+        dplyr::mutate(total = sum(fi_110, fi_120, fi_130, fi_140)) %>%
         custom_reactable(
           columns = list(
-            event = colDef(name = 'Event', minWidth = 80),
-            fi_110 = colDef(name = 'Air (mL/min)'),
-            fi_120 = colDef(name = 'Carbon dioxide (mL/min)'),
-            fi_130 = colDef(name = 'Argon / Propane (mL/min)'),
-            fi_140 = colDef(name = 'Nitrogen (mL/min)'),
-            total = colDef(name = 'Total flow (mL/min)')
-          ), 
+            event = reactable::colDef(name = 'Event', minWidth = 80),
+            fi_110 = reactable::colDef(name = 'Air (mL/min)'),
+            fi_120 = reactable::colDef(name = 'Carbon dioxide (mL/min)'),
+            fi_130 = reactable::colDef(name = 'Argon / Propane (mL/min)'),
+            fi_140 = reactable::colDef(name = 'Nitrogen (mL/min)'),
+            total = reactable::colDef(name = 'Total flow (mL/min)')
+          ),
         )
-    }) 
-    
-    output$corr <- renderReactable({
-      req(app_state$bd)
+    })
 
-      app_state$bd() %>% 
-        summarise(cor_air = mean(((fi_110 + 1)/(1 + fic_110))) %>% round(1),
+    output$corr <- reactable::renderReactable({
+      shiny::req(app_state$bd)
+
+      app_state$bd() %>%
+        dplyr::summarise(cor_air = mean(((fi_110 + 1)/(1 + fic_110))) %>% round(1),
                   cor_co2 = mean(((fi_120 + 1)/(fic_120 + 1))) %>% round(1),
                   cor_ar = mean(((fi_130 + 1)/(fic_130 +1))) %>% round(1),
                   cor_n2 = mean(((fi_140 + 1)/(fic_140 + 1))) %>% round(1),
                   .by = event) %>%
         custom_reactable(
           columns = list(
-            event = colDef(name = 'Event', minWidth = 80),
-            cor_air = colDef(name = 'Air', style = conditional_color),
-            cor_co2 = colDef(name = 'Carbon dioxide', style = conditional_color),
-            cor_ar = colDef(name = 'Argon / Propane', style = conditional_color),
-            cor_n2 = colDef(name = 'Nitrogen', style = conditional_color)
+            event = reactable::colDef(name = 'Event', minWidth = 80),
+            cor_air = reactable::colDef(name = 'Air', style = conditional_color),
+            cor_co2 = reactable::colDef(name = 'Carbon dioxide', style = conditional_color),
+            cor_ar = reactable::colDef(name = 'Argon / Propane', style = conditional_color),
+            cor_n2 = reactable::colDef(name = 'Nitrogen', style = conditional_color)
           )
         )
     })
-    
-    output$norm <- renderPlotly({
-      req(app_state$bd)
+
+    output$norm <- plotly::renderPlotly({
+      shiny::req(app_state$bd)
       plot <- tryCatch(expr = {
-        
-        app_state$bd() %>% 
-          transmute(date_time, deriv = norm_deriv(normoliter_out)) %>% 
-          group_by(group = rep(row_number(), each = 5, length.out = n())) %>%
-          summarise(time = mean(date_time), 
-                    value = mean(deriv, na.rm = T) %>% round(3)) %>% 
-          ggplot() +
-          geom_line(aes(x = time, y = value), linewidth = 0.2) +
-          labs(x = "Time", y = "Normalized milimeters rate") +
-          theme_bw()
-        
+
+        app_state$bd() %>%
+          dplyr::transmute(date_time, deriv = norm_deriv(normoliter_out)) %>%
+          dplyr::group_by(group = rep(dplyr::row_number(), each = 5, length.out = dplyr::n())) %>%
+          dplyr::summarise(time = mean(date_time), value = mean(deriv, na.rm = T) %>% round(3)) %>%
+          ggplot2::ggplot() +
+          ggplot2::geom_line(ggplot2::aes(x = time, y = value), linewidth = 0.2) +
+          ggplot2::labs(x = "Time", y = "Normalized milimeters rate") +
+          ggplot2::theme_bw()
+
       }, error = \(e) {
         ggplot(app_state$bd()) +
-          geom_line(aes(x = date_time, y = normoliter_out)) +
-          labs(x = "Time", y = "Normalized milimeters",
-               title = 'Flow rate not possible') +
-          theme_bw()
+          ggplot2::geom_line(ggplot2::aes(x = date_time, y = normoliter_out)) +
+          ggplot2::labs(x = "Time", y = "Normalized milimeters",
+                        title = 'Flow rate not possible') +
+          ggplot2::theme_bw()
       })
-        
-      ggplotly(plot)
+
+      plotly::ggplotly(plot)
     })
-    
-    output$temp <- renderReactable({
-      req(app_state$bd)
+
+    output$temp <- reactable::renderReactable({
+      shiny::req(app_state$bd)
       suppressWarnings({
-        
+
         app_state$bd() %>%
-        summarise(name = name[1],
-                  rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
-                  mean_measure = mean(tic_300_pv),
-                  mean_set = mean(tic_300_sp),
-                  mean_r1 = mean(te_310),
-                  mean_r2 = mean(te_320),
-                  .by = event)  %>%
-        mutate(across(.cols = 3:7, .fns = ~round(.x, 1))) %>%
+        dplyr::summarise(name = name[1],
+                         rate = diff(tic_300_pv) %>% mean(na.rm = T) ,
+                         mean_measure = mean(tic_300_pv),
+                         mean_set = mean(tic_300_sp),
+                         mean_r1 = mean(te_310),
+                         mean_r2 = mean(te_320),
+                         .by = event)  %>%
+        dplyr::mutate(dplyr::across(.cols = 3:7, .fns = ~round(.x, 1))) %>%
         custom_reactable(
           columns = list(
-            event = colDef(name = 'Event', minWidth = 80),
-            name = colDef(name = 'Name', minWidth = 200),
-            rate = colDef(name = 'Rate of change'),
-            mean_measure = colDef(name = 'Avg. measured'),
-            mean_set = colDef(name = 'Avg. setted'),
-            mean_r1 = colDef(name = 'Avg. Reactor 1'),
-            mean_r2 = colDef(name = 'Avg. Reactor 2')),
-          rowStyle = JS("function(rowInfo) { return { height: '50px' }}")
+            event = reactable::colDef(name = 'Event', minWidth = 80),
+            name = reactable::colDef(name = 'Name', minWidth = 200),
+            rate = reactable::colDef(name = 'Rate of change'),
+            mean_measure = reactable::colDef(name = 'Avg. measured'),
+            mean_set = reactable::colDef(name = 'Avg. setted'),
+            mean_r1 = reactable::colDef(name = 'Avg. Reactor 1'),
+            mean_r2 = reactable::colDef(name = 'Avg. Reactor 2')),
+          rowStyle = reactable::JS("function(rowInfo) { return { height: '50px' }}")
         )
       })
     })
-    
-    output$diffTemp <- renderPlotly({
-      req(app_state$bd)
+
+    output$diffTemp <- plotly::renderPlotly({
+      shiny::req(app_state$bd)
 
       plot <- app_state$bd() %>%
-        mutate(difference = tic_300_pv - te_320) %>%
-        ggplot() +
-        geom_line(aes(x = te_310, y = difference), linewidth = 0.2) +
-        facet_wrap(~event, scales = 'fixed') +
-        labs(x = "Temperature (°C)", y = "Temperature differences (°C)") +
-        theme_bw() +
-        theme(plot.title = element_text(hjust = 0.5, face = 'bold'))
-      
-      ggplotly(plot)
-    })
-    
-    output$press <- renderReactable({
-      req(app_state$bd)
+        dplyr::mutate(difference = tic_300_pv - te_320) %>%
+        ggplot2::ggplot() +
+          ggplot2::geom_line(ggplot2::aes(x = te_310, y = difference), linewidth = 0.2) +
+          ggplot2::facet_wrap(~event, scales = 'fixed') +
+          ggplot2::labs(x = "Temperature (°C)", y = "Temperature differences (°C)") +
+          ggplot2::theme_bw() +
+          ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = 'bold'))
 
-      app_state$bd() %>% 
-        summarise(name = name[1],
-                  mean_set = mean(p_set),
-                  mean_r1 = mean(pt_310),
-                  mean_r2 = mean(pt_320),
-                  delta = mean_r1 - mean_r2,
-                  .by = event) %>% 
-        mutate(across(.cols = 3:6, .fns = ~round(.x, 1))) %>%
-        custom_reactable(
-          columns = list(
-            event = colDef(name = 'Event', minWidth = 80),
-            name = colDef(name = 'Name', minWidth = 120),
-            mean_set = colDef(name = 'Avg. setted', minWidth = 80),
-            mean_r1 = colDef(name = 'Avg. Reactor 1', minWidth = 80),
-            mean_r2 = colDef(name = 'Avg. Reactor 2', minWidth = 80),
-            delta = colDef(name = 'Delta of pressure', minWidth = 90)
-          ), selection = 'single'
-        )
+      plotly::ggplotly(plot)
     })
-    
-    output$plotPress <- renderDygraph({
-      req(getReactableState('press', 'selected'))
-      
-      selected <- slice_head(app_state$bd(), n = 1, by = event) %>%
-        filter(row_number() == getReactableState('press', 'selected')) %>%
-        pull(event)
-      
+
+    output$press <- reactable::renderReactable({
+      shiny::req(app_state$bd)
+
       app_state$bd() %>%
-        filter(event == selected) %>%
-        rowwise() %>%
-        transmute(time = date_time, delta = mean(pt_310) - mean(pt_320)) %>%
-        dygraph() %>%
-        dySeries("delta") %>%
-        dyRangeSelector() %>%
-        dyOptions(useDataTimezone = TRUE) %>%
-        dyLegend(labelsDiv = 'legend')
+        dplyr::summarise(name = name[1],
+                         mean_set = mean(p_set),
+                         mean_r1 = mean(pt_310),
+                         mean_r2 = mean(pt_320),
+                         delta = mean_r1 - mean_r2,
+                         .by = event) %>%
+        dplyr::mutate(dplyr::across(.cols = 3:6, .fns = ~round(.x, 1))) %>%
+          custom_reactable(
+            columns = list(
+              event = reactable::colDef(name = 'Event', minWidth = 80),
+              name = reactable::colDef(name = 'Name', minWidth = 120),
+              mean_set = reactable::colDef(name = 'Avg. setted', minWidth = 80),
+              mean_r1 = reactable::colDef(name = 'Avg. Reactor 1', minWidth = 80),
+              mean_r2 = reactable::colDef(name = 'Avg. Reactor 2', minWidth = 80),
+              delta = reactable::colDef(name = 'Delta of pressure', minWidth = 90)
+            ), selection = 'single'
+          )
+    })
+
+    output$plotPress <- dygraphs::renderDygraph({
+      shiny::req(reactable::getReactableState('press', 'selected'))
+
+      selected <- dplyr::slice_head(app_state$bd(), n = 1, by = event) %>%
+        dplyr::filter(dplyr::row_number() == reactable::getReactableState('press', 'selected')) %>%
+        dplyr::pull(event)
+
+      app_state$bd() %>%
+        dplyr::filter(event == selected) %>%
+        dplyr::rowwise() %>%
+        dplyr::transmute(time = date_time, delta = mean(pt_310) - mean(pt_320)) %>%
+        dygraphs::dygraph() %>%
+        dygraphs::dySeries("delta") %>%
+        dygraphs::dyRangeSelector() %>%
+        dygraphs::dyOptions(useDataTimezone = TRUE) %>%
+        dygraphs::dyLegend(labelsDiv = 'legend')
     })
   })
 }
