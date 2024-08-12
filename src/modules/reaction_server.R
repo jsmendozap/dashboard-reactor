@@ -47,11 +47,21 @@ reaction_server <- function(id) {
         query("insert", "reactions", data.frame(name = input$save))
         query("insert", "settings", table() %>% dplyr::mutate(reaction = input$save))
         
+        shinyWidgets::updateSearchInput(session = session, inputId = "save", value = "")
+        
+        table(dplyr::tibble(
+          ID = numeric(),
+          Compound = character(),
+          Type = character(),
+          MFC_1 = numeric(),
+          MFC_2 = numeric(),
+          MFC_3 = numeric(),
+          MFC_4 = numeric()
+        ))
+        
         shinyWidgets::updatePickerInput(session = session, 
           inputId = "reactions_db", 
           choices = query("list", "reactions", "name"))
-          
-        shinyWidgets::updateSearchInput(session = session, inputId = "save", value = "")
         
         shinyToastify::showToast(
           session,
