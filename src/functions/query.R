@@ -4,11 +4,21 @@ query <- function(operation, name = NULL, value = NULL){
                         read_only = FALSE
                       )
 
-  switch (operation,
-    append = duckdb::dbAppendTable(con, name, value),
-    list = duckdb::dbListTables(con) %>% print(),
-    head = dplyr::tbl(con, name) %>% head() %>% print()
+  res <- switch (operation,
+    insert = duckdb::dbAppendTable(con, name, value),
+    list = {
+      statement <- stringr::str_glue('SELECT "{value}" FROM {name}')
+      DBI::dbGetQuery(con, statement) %>% as.vector %>% unlist %>% unname
+    },
+    exist = duckdb::dbExistsTable(con, name),
+    head = {
+      statement <- stringr::str_glue('SELECT * FROM {name} WHERE ("reaction" = \'{value}\')')
+      DBI::dbGetQuery(con, statement) 
+    },
+    tables = duckdb::dbListTables(con) %>% print()
   )
-
+  
   duckdb::dbDisconnect(conn = con)
+  
+  return(res)
 }

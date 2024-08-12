@@ -6,7 +6,7 @@ if (!"pacman" %in% installed.packages()) { install.packages("pacman", repos = 'h
 pacman::p_load(
     quarto, plyr, tidyverse, readxl, janitor, dygraphs, shinyWidgets, bs4Dash,
     shiny, prettyunits, plotly, zoo, reactable, reactable.extras, shinyFiles,
-    duckdb, DBI
+    duckdb, DBI, shinyToastify
 )
 
 if (.Platform$OS.type == "windows") {
