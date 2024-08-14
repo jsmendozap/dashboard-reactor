@@ -183,7 +183,7 @@ chem_server <- function(id, app_state) {
                        axis.text.x = ggplot2::element_blank(),
                        axis.ticks.x = ggplot2::element_blank())
 
-      total_height <- 180 * length(unique(chem_values()$event))/2
+      total_height <- 180 + 180 * length(input$graph_event)/2
       plotly::ggplotly(box, height = total_height)
     })
 

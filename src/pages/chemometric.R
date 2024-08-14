@@ -19,7 +19,7 @@ chemometric_ui <- function(id) {
                                 shiny::tabPanel(title = "Box plot",
                                          shiny::fluidRow(
                                            bs4Dash::column(width = 12,
-                                                  plotly::plotlyOutput(ns('boxplot'), height = '50%'))
+                                                  plotly::plotlyOutput(ns('boxplot'), height = '30%'))
                                          ))
                           )
                        )

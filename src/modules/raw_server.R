@@ -46,7 +46,7 @@ raw_server <- function(id, app_state) {
 
     output$composition <- plotly::renderPlotly({
       shiny::req(input$gc_event)
-
+      
       plot <- app_state$gc() %>%
         dplyr::select(-injection) %>%
         tidyr::pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
@@ -66,7 +66,7 @@ raw_server <- function(id, app_state) {
               plot.margin = ggplot2::unit(c(0, 0, 2, 0), 'cm'),
               panel.background = ggplot2::element_rect(colour = 'black'))
 
-      total_height <- 180 * length(unique(app_state$gc()$event))
+      total_height <- 180 + 180 * length(input$gc_event)
       plotly::ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
 
@@ -155,7 +155,7 @@ raw_server <- function(id, app_state) {
                        panel.background = ggplot2::element_rect(colour = 'black'),
                        plot.margin = ggplot2::unit(c(0, 0, 2, 2), units = 'cm'))
 
-      total_height <- 180 * length(unique(app_state$ms()$event))
+      total_height <- 180 + 180 * length(input$ms_event)
       plotly::ggplotly(plot, height = total_height,
                dynamicTicks = T, tooltip = c('color', 'x', 'y'))
     })
