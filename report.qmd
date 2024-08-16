@@ -152,17 +152,22 @@ ggplotly(plot, width = 900, height = total_height)
 ```{r}
 #| column: body-outset
 
-data <- params$ms %>%
-        as_tibble() %>%
-        select(time_absolute_date_time, `2_amu_hydrogen`, `18_amu_water`, `44_amu_co2_c3h8`) %>%
-        mutate(time_absolute_date_time = as.POSIXct(time_absolute_date_time, origin="1970-01-01", tz="UTC"),
-               across(.cols = contains('amu'),
-                      .fns = ~smooth.spline(.x, spar = 0)$y)) %>%
-        rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) 
+if(is.null(params$ms)) {
+  cat("No MS file found in folder")
+} else {
+  data <- params$ms %>%
+          as_tibble() %>%
+          select(time_absolute_date_time, `2_amu_hydrogen`, `18_amu_water`, `44_amu_co2_c3h8`) %>%
+          mutate(time_absolute_date_time = as.POSIXct(time_absolute_date_time, origin="1970-01-01", tz="UTC"),
+                 across(.cols = contains('amu'),
+                        .fns = ~smooth.spline(.x, spar = 0)$y)) %>%
+          rename_with(.fn = ~str_replace_all(.x, '_', ' '), .cols = contains('_amu_')) 
+  
+  dygraph(data, xlab = 'Reaction Time (min)') %>%
+    dyRangeSelector() %>%
+    dyLegend(width = 800) %>%
+    dyOptions(useDataTimezone = TRUE) %>%
+    dyOptions(strokeWidth = 2)
+}
 
-dygraph(data, xlab = 'Reaction Time (min)') %>%
-  dyRangeSelector() %>%
-  dyLegend(width = 800) %>%
-  dyOptions(useDataTimezone = TRUE) %>%
-  dyOptions(strokeWidth = 2)
 ```

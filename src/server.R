@@ -69,11 +69,21 @@ server <- function(input, output) {
       file.copy("report.qmd", tempReport, overwrite = TRUE)
 
       quarto::quarto_render(input = tempReport,
-                    execute_params = list(df = df(), bd = bd(), gc = gc(),
-                                          ms = ms() %>% dplyr::mutate(time_absolute_date_time = as.character(time_absolute_date_time)),
-                                          path = path()))
+                            execute_params = list(df = df(), bd = bd(), gc = gc(),
+                                                  ms = tryCatch({
+                                                    ms() %>%
+                                                      dplyr::mutate(time_absolute_date_time = as.character(time_absolute_date_time))
+                                                  }, error = \(e) NULL),
+                                                  path = path()))
 
-      file.copy(file.path(tempdir(), 'report.html'), file)
+      file.copy(from = file.path(tempdir(), 'report.html'),
+                to = file.path(path(), 'report.html'))
     }
   )
+
+  ### timeout -------------------------------------------------------------------
+
+  timeout <- shiny::reactiveTimer(10000)
+  shiny::observeEvent(timeout, "App session active\n")
+
 }
