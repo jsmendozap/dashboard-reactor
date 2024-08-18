@@ -73,6 +73,8 @@ chem_server <- function(id, app_state) {
         dplyr::ungroup()
     })
 
+    ## Molar flow --------------------------------------------------------------------------------------------------------
+
     output$flow_compounds <- shiny::renderUI({
       shiny::req(app_state$gc)
 
@@ -131,26 +133,41 @@ chem_server <- function(id, app_state) {
       plotly::ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
 
-    output$boxplot <- plotly::renderPlotly({
+    ### Conversion --------------------------------------------------------------------------------------------
+    
+    reactants <- shiny::reactive({
+      query("head", "settings", app_state$setting()) %>%
+        dplyr::filter(Type == "Reactant") %>%
+        dplyr::pull(Compound) %>%
+        stringr::str_replace_all(" ", "_") %>%
+        tolower()
+    })
+    
+    avgs <- shiny::reactive({
+      plyr::ddply(.data = chem_values() %>% dplyr::filter(technique == 'By Pass'),
+                  .variables =  'event',
+                  .fun = \(x) {
+                    mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
+                    
+                    x %>%
+                      dplyr::select(technique, dplyr::all_of(reactants())) %>%
+                      dplyr::summarise(technique = unique(technique),
+                                       dplyr::across(.cols = 2:ncol(.), .fns = ~mean_flow(.x)))
+                  })
+    })
 
-      avgs <- plyr::ddply(.data = chem_values() %>% dplyr::filter(technique == 'By Pass'),
-                          .variables =  'event',
-                          .fun = \(x) {
-                            mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
-
-                            x %>%
-                              dplyr::summarise(technique = unique(technique),
-                                               co2 = mean_flow(carbon_dioxide),
-                                               propane = mean_flow(propane))
-            })
+    output$conversion <- plotly::renderPlotly({
+      req(app_state$setting())
 
       bypass <- chem_values() %>%
         dplyr::select(event, technique) %>%
         dplyr::distinct() %>%
         dplyr::filter(technique %in% c('By Pass', 'TOS')) %>%
-        dplyr::left_join(avgs) %>%
-        tidyr::fill(co2, propane, .direction = 'down') %>%
-        dplyr::transmute(event, technique, co2_bypass = co2, propane_bypass = propane)
+        dplyr::left_join(avgs()) %>%
+        tidyr::fill(dplyr::all_of(reactants()), .direction = 'down') %>%
+        dplyr::transmute(event, technique,
+                         dplyr::across(.cols = reactants(), .names = "{.col}_bypass")
+        ) 
 
       names <- chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
@@ -158,34 +175,36 @@ chem_server <- function(id, app_state) {
         dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
         {setNames(.$name, .$event)} 
 
-      box <- chem_values() %>%
+      conversion_plot <- chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
         dplyr::left_join(bypass) %>%
-        dplyr::mutate(carbon_dioxide = carbon_dioxide - co2_bypass,
-                      propane = propane - propane_bypass) %>%
-        dplyr::select(event, 10:ncol(.), -c(co2_bypass, propane_bypass)) %>%
-        tidyr::pivot_longer(cols = 2:ncol(.), names_to = 'Compound', values_to = 'value') %>%
-        dplyr::filter(!Compound %in% c('argon', 'nitrogen')) %>%
+        dplyr::mutate(dplyr::across(.cols = reactants(), 
+                                    .fns = ~ 100 * ((get(paste0(dplyr::cur_column(), "_bypass")) - .)/get(paste0(dplyr::cur_column(), "_bypass"))))) %>%
+        dplyr::select(time, event, dplyr::all_of(reactants())) %>%
+        tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
-        dplyr::filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
-        ggplot2::ggplot(aes(x = Compound, y = value, fill = Compound)) +
-        ggplot2::geom_boxplot() +
-        ggplot2::stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +
-        ggplot2::stat_summary(fun = min, geom = "point", shape = 25) +
-        ggplot2::stat_summary(fun = max, geom = "point", shape = 19) +
-        ggplot2::labs(x = '', y = "Molar flow (mol/h)") +
-        ggplot2::facet_wrap(~event, scales = 'fixed', ncol = 2, labeller = ggplot2::as_labeller(names)) +
+        ggplot2::ggplot(aes(x = time, y = value, fill = Compound, shape = Compound)) +
+        ggplot2::geom_line() +
+        ggplot2::geom_point() +
+        ggplot2::labs(x = 'Time (min)', y = "Conversion (%)") +
+        ggplot2::facet_wrap(~event, ncol = 2, labeller = ggplot2::as_labeller(names)) +
         ggplot2::theme_bw() +
         ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
                        axis.title.y = ggplot2::element_text(size = 12),
-                       panel.background = ggplot2::element_rect(colour = 'black'),
-                       axis.title.x = ggplot2::element_blank(),
-                       axis.text.x = ggplot2::element_blank(),
-                       axis.ticks.x = ggplot2::element_blank())
-
+                       panel.background = ggplot2::element_rect(colour = 'black'))
+                       
       total_height <- 180 + 180 * length(input$graph_event)/2
-      plotly::ggplotly(box, height = total_height)
+      plotly::ggplotly(conversion_plot, height = total_height)
     })
 
+    ### Boxplot ------------------------------------------------------------------------------------------------
+    
+    #dplyr::filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
+    
+    #ggplot2::geom_boxplot() +
+    #ggplot2::stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +
+    #ggplot2::stat_summary(fun = min, geom = "point", shape = 25) +
+    #ggplot2::stat_summary(fun = max, geom = "point", shape = 19) +
+    
   })
 }

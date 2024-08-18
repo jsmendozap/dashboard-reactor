@@ -27,14 +27,18 @@ reaction_ui <- function(id){
                 shiny::tabPanel(title = "Create reaction",
                         shiny::fluidRow(
                           shiny::div(
-                            bs4Dash::column(width = 4, shinyWidgets::pickerInput(ns('compound'), 'Compound', compounds$name,
+                            bs4Dash::column(width = 2, shinyWidgets::pickerInput(ns('compound'), 'Compound', compounds$name,
                                                                                  options = list(`actions-box` = TRUE, `live-search` = TRUE))),
                             bs4Dash::column(width = 2, shinyWidgets::pickerInput(ns('c_type'), 'Type', choices)),
-                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc1"), "MFC 1", value = NA)),
-                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc2"), "MFC 2", value = NA)),
-                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc3"), "MFC 3", value = NA)),
-                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc4"), "MFC 4", value = NA)),
-                            bs4Dash::column(width = 2, bs4Dash::actionButton(ns("new"), "Add row")),
+                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc1"), "CMP 1", value = NA)),
+                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc2"), "CMP 2", value = NA)),
+                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc3"), "CMP 3", value = NA)),
+                            bs4Dash::column(width = 1, shiny::numericInput(ns("mfc4"), "CMP 4", value = NA)),
+                            div(
+                              bs4Dash::column(width = 6, bs4Dash::actionButton(ns("new"), "Add")),
+                              bs4Dash::column(width = 6, bs4Dash::actionButton(ns("remove"), "Remove")),
+                              style = "display: flex; text-align: center"
+                            ),
                             style = "display: flex; align-items: center"
                           ),
                           reactable::reactableOutput(ns('compounds_table')),

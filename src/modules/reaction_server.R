@@ -7,10 +7,10 @@ reaction_server <- function(id) {
         ID = numeric(),
         Compound = character(),
         Type = character(),
-        MFC_1 = numeric(),
-        MFC_2 = numeric(),
-        MFC_3 = numeric(),
-        MFC_4 = numeric()
+        CMP_1 = numeric(),
+        CMP_2 = numeric(),
+        CMP_3 = numeric(),
+        CMP_4 = numeric()
       )
     )
 
@@ -20,10 +20,10 @@ reaction_server <- function(id) {
           ID = 1,
           Compound = input$compound,
           Type = input$c_type,
-          MFC_1 = input$mfc1,
-          MFC_2 = input$mfc2,
-          MFC_3 = input$mfc3,
-          MFC_4 = input$mfc4,
+          CMP_1 = input$mfc1,
+          CMP_2 = input$mfc2,
+          CMP_3 = input$mfc3,
+          CMP_4 = input$mfc4,
         ) %>%
         dplyr::mutate(ID = dplyr::row_number()) %>%
         table()
@@ -36,9 +36,9 @@ reaction_server <- function(id) {
 
     output$compounds_table <- reactable::renderReactable({
       table() %>%
-        dplyr::rename_with(.fn = ~stringr::str_replace_all(.x, '_', ' '), .cols = dplyr::contains('MFC')) %>%
+        dplyr::rename_with(.fn = ~stringr::str_replace_all(.x, '_', ' '), .cols = dplyr::contains('CMP')) %>%
         custom_reactable(columns = list(Compound = reactable::colDef(minWidth = 250)),
-                         style = "border-radius: 3px"
+                         style = "border-radius: 3px", selection = 'single'
                         )
     })
     
@@ -53,10 +53,10 @@ reaction_server <- function(id) {
           ID = numeric(),
           Compound = character(),
           Type = character(),
-          MFC_1 = numeric(),
-          MFC_2 = numeric(),
-          MFC_3 = numeric(),
-          MFC_4 = numeric()
+          CMP_1 = numeric(),
+          CMP_2 = numeric(),
+          CMP_3 = numeric(),
+          CMP_4 = numeric()
         ))
         
         shinyWidgets::updatePickerInput(session = session, 
@@ -73,6 +73,20 @@ reaction_server <- function(id) {
         )
       }
       })
+    
+    observeEvent(input$remove, {
+      sel <- reactable::getReactableState('compounds_table', 'selected')
+      
+      table() %>%
+        dplyr::filter(ID != sel) %>%
+        dplyr::mutate(ID = row_number()) %>%
+        table()
+
+      table() %>%
+        dplyr::rename_with(.fn = ~stringr::str_replace_all(.x, '_', ' '), .cols = dplyr::contains('MFC')) %>%
+        {reactable::updateReactable('compounds_table', .)}
+      
+    })
       
     ### Load reactions  
     
@@ -98,5 +112,7 @@ reaction_server <- function(id) {
                              .cols = dplyr::contains('MFC')) %>%
         custom_reactable()
     })
+
+    return(reactive({ input$reactions_db }))
   })
 }

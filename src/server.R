@@ -10,7 +10,8 @@ server <- function(input, output) {
     app_state$gc <- gc
     app_state$ms <- ms
     app_state$path <- path
-  }) %>% shiny::bindEvent(c(df(), bd(), gc(), ms(), path()))
+    app_state$setting <- setting
+  }) %>% shiny::bindEvent(c(df(), bd(), gc(), ms(), path(), setting()))
 
   volumes <- c(Home = fs::path_home(),  shinyFiles::getVolumes()())
   shinyFiles::shinyDirChoose(input, "directory", roots = volumes)
@@ -53,7 +54,7 @@ server <- function(input, output) {
 
   ## Pages -----------------------------------------------------------------------
 
-  reaction_server('reaction')
+  setting <- reaction_server('reaction')
   log_server('log', app_state)
   quality_server('quality', app_state)
   raw_server('raw', app_state)
