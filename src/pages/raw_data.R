@@ -8,6 +8,7 @@ raw_data_ui <- function(id) {
               shiny::tabPanel(title = "GC composition",
                      shiny::fluidRow(
                             bs4Dash::column(width = 3,
+                                   shiny::selectInput(ns('gc_type'), "GC plot type", c("General", "Events")),
                                    shiny::uiOutput(ns('UIcompunds')),
                                    shiny::uiOutput(ns('gc_events')),
                                    shiny::uiOutput(ns('xgc'))),

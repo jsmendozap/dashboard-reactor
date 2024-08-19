@@ -57,8 +57,6 @@ raw_server <- function(id, app_state) {
         ggplot2::geom_hline(yintercept = 100, linetype = 'dashed') +
         ggplot2::labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
                       y = "Composition") +
-        ggplot2::facet_wrap(~event, scales = 'free', ncol = 2,
-                   labeller = ggplot2::as_labeller(names())) +
         ggplot2::theme_bw() +
         ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
               axis.title = ggplot2::element_text(size = 12),
@@ -66,7 +64,15 @@ raw_server <- function(id, app_state) {
               plot.margin = ggplot2::unit(c(0, 0, 2, 0), 'cm'),
               panel.background = ggplot2::element_rect(colour = 'black'))
 
-      total_height <- 180 + 180 * length(input$gc_event)
+      total_height <- 500
+      
+      if(input$gc_type == 'Events') {
+        plot <- plot + 
+          ggplot2::facet_wrap(~event, scales = 'free', ncol = 2,
+                             labeller = ggplot2::as_labeller(names())) 
+        total_height <- 180 + 180 * length(input$gc_event)
+      }
+      
       plotly::ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
 
