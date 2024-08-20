@@ -106,7 +106,7 @@ chem_server <- function(id, app_state) {
       shiny::req(input$graph_compounds)
       shiny::req(input$graph_event)
 
-      names <- chem_values() %>%
+      event_names <- chem_values() %>%
         dplyr::summarise(name = unique(name), .by = event) %>%
         dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
         {setNames(.$name, .$event)}
@@ -121,7 +121,7 @@ chem_server <- function(id, app_state) {
         ggplot2::geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
         ggplot2::labs(x = 'Time (min)', y = "Molar flow (mol/h)") +
         ggplot2::facet_wrap(~event, scales = 'fixed', ncol = 2,
-                            labeller = ggplot2::as_labeller(names)) +
+                            labeller = ggplot2::as_labeller(event_names)) +
         ggplot2::theme_bw() +
         ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
                        axis.title = ggplot2::element_text(size = 12),
@@ -156,28 +156,31 @@ chem_server <- function(id, app_state) {
                   })
     })
 
-    output$conversion <- plotly::renderPlotly({
-      req(app_state$setting())
-
-      bypass <- chem_values() %>%
-        dplyr::select(event, technique) %>%
-        dplyr::distinct() %>%
-        dplyr::filter(technique %in% c('By Pass', 'TOS')) %>%
-        dplyr::left_join(avgs()) %>%
-        tidyr::fill(dplyr::all_of(reactants()), .direction = 'down') %>%
-        dplyr::transmute(event, technique,
-                         dplyr::across(.cols = reactants(), .names = "{.col}_bypass")
-        ) 
-
-      names <- chem_values() %>%
+    bypass <- shiny::reactive({
+      chem_values() %>%
+      dplyr::select(event, technique) %>%
+      dplyr::distinct() %>%
+      dplyr::filter(technique == 'By Pass') %>%
+      dplyr::left_join(avgs()) %>%
+      dplyr::transmute(event, technique,
+                       dplyr::across(.cols = reactants(), .names = "{.col}_bypass")
+      )
+    })
+    
+    event_names <- shiny::reactive({
+      chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
         dplyr::summarise(name = unique(name), .by = event) %>%
         dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
         {setNames(.$name, .$event)} 
+    })
+
+    output$conversion <- plotly::renderPlotly({
+      req(app_state$setting())
 
       conversion_plot <- chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
-        dplyr::left_join(bypass) %>%
+        dplyr::left_join(bypass() %>% dplyr::mutate(event = event + 1), by = dplyr::join_by('event')) %>%
         dplyr::mutate(dplyr::across(.cols = reactants(), 
                                     .fns = ~ 100 * ((get(paste0(dplyr::cur_column(), "_bypass")) - .)/get(paste0(dplyr::cur_column(), "_bypass"))))) %>%
         dplyr::select(time, event, dplyr::all_of(reactants())) %>%
@@ -187,7 +190,8 @@ chem_server <- function(id, app_state) {
         ggplot2::geom_line() +
         ggplot2::geom_point() +
         ggplot2::labs(x = 'Time (min)', y = "Conversion (%)") +
-        ggplot2::facet_wrap(~event, ncol = 2, labeller = ggplot2::as_labeller(names)) +
+        ggplot2::scale_y_continuous(n.breaks = 10) +
+        ggplot2::facet_wrap(~event, ncol = 2, labeller = ggplot2::as_labeller(event_names())) +
         ggplot2::theme_bw() +
         ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
                        axis.title.y = ggplot2::element_text(size = 12),
@@ -195,6 +199,50 @@ chem_server <- function(id, app_state) {
                        
       total_height <- 180 + 180 * length(input$graph_event)/2
       plotly::ggplotly(conversion_plot, height = total_height)
+    })
+
+    ### Mass balance -------------------------------------------------------------------------------------------
+
+    output$mass_balance <- plotly::renderPlotly({
+
+      c_in <- compounds %>%
+        dplyr::mutate(name = stringr::str_replace_all(name, " ", "_") %>% tolower()) %>%
+        dplyr::filter(name %in% names(chem_values()))
+      
+      mass_plot <- chem_values() %>%
+          dplyr::filter(technique == 'TOS') %>%
+          dplyr::select(event, time, dplyr::any_of(c_in$name))
+        
+      b_in <- bypass() %>% 
+            dplyr::relocate(event, technique, dplyr::contains(c_in$name)) %>%
+            {as.matrix(x = .[,3:ncol(.)])} %*% as.matrix(dplyr::filter(c_in, name %in% reactants()) %>% .[,4:6]) %>%
+            dplyr::as_tibble() %>%
+            dplyr::mutate(event = bypass()$event + 1)
+
+      mass_plot <- as.matrix(mass_plot[,3:ncol(mass_plot)]) %*% as.matrix(c_in[,4:6]) %>%
+        dplyr::as_tibble() %>%
+        dplyr::mutate(event = mass_plot$event, time = mass_plot$time) %>%
+        dplyr::left_join(b_in, by = dplyr::join_by('event'), suffix = c("_out", "_in")) %>%
+        dplyr::transmute(event, time, 
+                          across(.cols = ends_with("_out"),
+                                .fns =  ~ .x / get(stringr::str_replace(dplyr::cur_column(), "_out", "_in")), 
+                                .names = "{stringr::str_replace(.col, '_out', '')}")) %>%
+        tidyr::pivot_longer(cols = 3:ncol(.), names_to = "Compound", values_to = "value") %>%
+        dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
+        ggplot2::ggplot(aes(x = time, y = value, fill = Compound)) +
+          ggplot2::geom_line() +
+          ggplot2::geom_point() +
+          ggplot2::labs(x = 'Time (min)', y = "Mass balance") +
+            ggplot2::scale_y_continuous(n.breaks = 10) +
+            ggplot2::facet_wrap(~event, ncol = 2, labeller = ggplot2::as_labeller(event_names())) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
+                           axis.title.y = ggplot2::element_text(size = 12),
+                           panel.background = ggplot2::element_rect(colour = 'black'))
+                           
+        total_height <- 180 + 180 * length(input$graph_event)/2
+        plotly::ggplotly(mass_plot, height = total_height)
+
     })
 
     ### Boxplot ------------------------------------------------------------------------------------------------

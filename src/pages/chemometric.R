@@ -11,23 +11,32 @@ chemometric_ui <- function(id) {
                                 shiny::uiOutput(ns('flow_events')),
                                 bs4Dash::actionButton(ns('btn_flow'), label = 'Calculate flows')),
                          bs4Dash::tabBox(width = 9,
-                                shiny::tabPanel(title = "Molar flow",
+                                shiny::tabPanel(title = "Molar rate",
                                          shiny::fluidRow(
                                            bs4Dash::column(width = 12,
                                                  plotly::plotlyOutput(ns('molar_flow'), height = '50%'))
-                                          )),
+                                          )
+                                   ),
                                 shiny::tabPanel(title = "Conversion",
                                          shiny::fluidRow(
                                            bs4Dash::column(width = 12,
-                                                  plotly::plotlyOutput(ns('conversion'), height = '30%'))
-                                         )),
+                                                 plotly::plotlyOutput(ns('conversion'), height = '30%'))
+                                          )
+                                   ),
+                                shiny::tabPanel(title = "Mass balance",
+                                          shiny::fluidRow(
+                                           bs4Dash::column(width = 12,
+                                                 plotly::plotlyOutput(ns('mass_balance'), height = '30%'))
+                                          )
+                                   ),         
                                 shiny::tabPanel(title = "Box plot",
                                           shiny::fluidRow(
                                           bs4Dash::column(width = 12,
                                                  plotly::plotlyOutput(ns('boxplot'), height = '30%'))
-                            ))
+                                          )
+                                   )
                           )
                        )
-)
+       )
 
 }
