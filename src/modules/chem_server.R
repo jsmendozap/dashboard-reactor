@@ -80,8 +80,7 @@ chem_server <- function(id, app_state) {
 
       comp <- colnames(app_state$gc())[-c(1:5)] %>%
         {.[which(!. %in% c('nitrogen', 'argon'))]} %>%
-        stringr::str_replace_all('_', ' ') %>%
-        stringr::str_to_title()
+        change_str('_', ' ')
 
       shinyWidgets::pickerInput(
         inputId = ns("graph_compounds"), label = "Select compounds to plot",
@@ -115,7 +114,7 @@ chem_server <- function(id, app_state) {
         dplyr::select(event, time, 9:ncol(.)) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::filter(!Compound %in% c('argon', 'nitrogen')) %>%
-        dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
         plotly::filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
         plot(x = time,
              y = value, 
@@ -145,8 +144,7 @@ chem_server <- function(id, app_state) {
       query("head", "settings", app_state$setting()) %>%
         dplyr::filter(Type == "Reactant") %>%
         dplyr::pull(Compound) %>%
-        stringr::str_replace_all(" ", "_") %>%
-        tolower()
+        change_str(" ", "_", T)
     })
     
     avgs <- shiny::reactive({
@@ -191,7 +189,7 @@ chem_server <- function(id, app_state) {
                                     .fns = ~ 100 * ((get(paste0(dplyr::cur_column(), "_bypass")) - .)/get(paste0(dplyr::cur_column(), "_bypass"))))) %>%
         dplyr::select(time, event, dplyr::all_of(reactants())) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
-        dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
         plot(x = time, 
              y = value, 
              fill = Compound,
@@ -217,7 +215,7 @@ chem_server <- function(id, app_state) {
     output$mass_balance <- plotly::renderPlotly({
 
       c_in <- compounds %>%
-        dplyr::mutate(name = stringr::str_replace_all(name, " ", "_") %>% tolower()) %>%
+        dplyr::mutate(name = change_str(name, " ", "_", T)) %>%
         dplyr::filter(name %in% names(chem_values()))
       
       mass_plot <- chem_values() %>%
@@ -239,7 +237,7 @@ chem_server <- function(id, app_state) {
                                 .fns =  ~ .x / get(stringr::str_replace(dplyr::cur_column(), "_out", "_in")), 
                                 .names = "{stringr::str_replace(.col, '_out', '')}")) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = "Compound", values_to = "value") %>%
-        dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
         plot(x = time,
              y = value, 
              fill = Compound,

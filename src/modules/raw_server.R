@@ -13,9 +13,7 @@ raw_server <- function(id, app_state) {
     output$UIcompunds <- shiny::renderUI({
       shiny::req(app_state$gc)
 
-      comp <- colnames(app_state$gc())[-c(1:5)] %>%
-        stringr::str_replace_all('_', ' ') %>%
-        stringr::str_to_title()
+      comp <- colnames(app_state$gc())[-c(1:5)] %>% change_str("_", " ")
 
       shinyWidgets::pickerInput(
         inputId = ns("compounds"), label = "Select compounds to plot",
@@ -50,7 +48,7 @@ raw_server <- function(id, app_state) {
       comp_plot <- app_state$gc() %>%
         dplyr::select(-injection) %>%
         tidyr::pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
-        dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
+        dplyr::mutate(Compound = change_str(Compound, "_", " ")) %>%
         dplyr::filter(Compound %in% input$compounds & event %in% input$gc_event) %>%
         plot(x = .data[[input$gc_xaxis]],
              y = value,
@@ -153,7 +151,7 @@ raw_server <- function(id, app_state) {
              xlab = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
              ylab = "Arbitrary unit (a.u)",
              facet = 'event',
-             args = list(facet = list(scales = ifelse(input$scale == TRUE, 'fixed', 'free'),
+             args = list(facet = list(scales = ifelse(input$scale == TRUE, 'fixed', 'free_x'),
                                       ncol = 2, labeller = ggplot2::as_labeller(names())))) +
           ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
                          axis.title = ggplot2::element_text(size = 12),
