@@ -111,18 +111,24 @@ chem_server <- function(id, app_state) {
         dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
         {setNames(.$name, .$event)}
 
-      plot <- chem_values() %>%
+      molar_plot <- chem_values() %>%
         dplyr::select(event, time, 9:ncol(.)) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::filter(!Compound %in% c('argon', 'nitrogen')) %>%
         dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
         plotly::filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
-        ggplot2::ggplot(ggplot2::aes(x = time, y = value, fill = Compound)) +
-        ggplot2::geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
-        ggplot2::labs(x = 'Time (min)', y = "Molar flow (mol/h)") +
-        ggplot2::facet_wrap(~event, scales = 'fixed', ncol = 2,
-                            labeller = ggplot2::as_labeller(event_names)) +
-        ggplot2::theme_bw() +
+        plot(x = time,
+             y = value, 
+             fill = Compound, 
+             area = T,
+             xlab = 'Time (min)',
+             ylab = 'Molar flow (mol/h)',
+             facet = "event",
+             args = list(
+              area = list(alpha = 0.6, color = 'black', linewidth = 0.2),
+              facet = list(scales = 'fixed', ncol = 2, labeller = ggplot2::as_labeller(event_names))
+             )
+        ) +
         ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
                        axis.title = ggplot2::element_text(size = 12),
                        panel.spacing = ggplot2::unit(0.5, "cm"),
@@ -130,7 +136,7 @@ chem_server <- function(id, app_state) {
                        panel.background = ggplot2::element_rect(colour = 'black'))
 
       total_height <- 180 * length(unique(chem_values()$event))
-      plotly::ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
+      plotly::ggplotly(molar_plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
 
     ### Conversion --------------------------------------------------------------------------------------------
@@ -186,13 +192,18 @@ chem_server <- function(id, app_state) {
         dplyr::select(time, event, dplyr::all_of(reactants())) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
-        ggplot2::ggplot(aes(x = time, y = value, fill = Compound, shape = Compound)) +
-        ggplot2::geom_line() +
-        ggplot2::geom_point() +
-        ggplot2::labs(x = 'Time (min)', y = "Conversion (%)") +
-        ggplot2::scale_y_continuous(n.breaks = 10) +
-        ggplot2::facet_wrap(~event, ncol = 2, labeller = ggplot2::as_labeller(event_names())) +
-        ggplot2::theme_bw() +
+        plot(x = time, 
+             y = value, 
+             fill = Compound,
+             shape = Compound,
+             lines = T,
+             points = T,
+             xlab = 'Time (min)',
+             ylab = 'Conversion (%)',
+             facet = 'event',
+             scale_y = list(n.breaks = 10),
+             args = list(facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names())))
+        ) +
         ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
                        axis.title.y = ggplot2::element_text(size = 12),
                        panel.background = ggplot2::element_rect(colour = 'black'))
@@ -229,17 +240,21 @@ chem_server <- function(id, app_state) {
                                 .names = "{stringr::str_replace(.col, '_out', '')}")) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = "Compound", values_to = "value") %>%
         dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
-        ggplot2::ggplot(aes(x = time, y = value, fill = Compound)) +
-          ggplot2::geom_line() +
-          ggplot2::geom_point() +
-          ggplot2::labs(x = 'Time (min)', y = "Mass balance") +
-            ggplot2::scale_y_continuous(n.breaks = 10) +
-            ggplot2::facet_wrap(~event, ncol = 2, labeller = ggplot2::as_labeller(event_names())) +
-            ggplot2::theme_bw() +
-            ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
-                           axis.title.y = ggplot2::element_text(size = 12),
-                           panel.background = ggplot2::element_rect(colour = 'black'))
-                           
+        plot(x = time,
+             y = value, 
+             fill = Compound,
+             lines = T,
+             points = T,
+             xlab = "Time (min)",
+             ylab = "Mass balance",
+             facet = 'event',
+             scale_y = list(n.breaks = 10),
+             args = list(facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names())))
+        ) + 
+          ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
+                         axis.title.y = ggplot2::element_text(size = 12),
+                         panel.background = ggplot2::element_rect(colour = 'black'))
+        
         total_height <- 180 + 180 * length(input$graph_event)/2
         plotly::ggplotly(mass_plot, height = total_height)
 

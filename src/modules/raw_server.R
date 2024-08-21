@@ -47,33 +47,31 @@ raw_server <- function(id, app_state) {
     output$composition <- plotly::renderPlotly({
       shiny::req(input$gc_event)
       
-      plot <- app_state$gc() %>%
+      comp_plot <- app_state$gc() %>%
         dplyr::select(-injection) %>%
         tidyr::pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ') %>% stringr::str_to_title()) %>%
         dplyr::filter(Compound %in% input$compounds & event %in% input$gc_event) %>%
-        ggplot2::ggplot(ggplot2::aes(x = .data[[input$gc_xaxis]], y = value, fill = Compound)) +
-        ggplot2::geom_area(alpha = 0.6, color = 'black', linewidth = 0.2) +
-        ggplot2::geom_hline(yintercept = 100, linetype = 'dashed') +
-        ggplot2::labs(x = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
-                      y = "Composition") +
-        ggplot2::theme_bw() +
-        ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
-              axis.title = ggplot2::element_text(size = 12),
-              panel.spacing = ggplot2::unit(1, "lines"),
-              plot.margin = ggplot2::unit(c(0, 0, 2, 0), 'cm'),
-              panel.background = ggplot2::element_rect(colour = 'black'))
-
-      total_height <- 500
+        plot(x = .data[[input$gc_xaxis]],
+             y = value,
+             fill = Compound,
+             facet = "event",
+             ylab = "Composition",
+             area = T, 
+             hline = T, 
+             xlab = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'), 
+             args = list(area = list(alpha = 0.6, color = 'black', linewidth = 0.2),
+                         hline = list(yintercept = 100, linetype = 'dashed'),
+                         facet = list(ncol = 2, labeller = ggplot2::as_labeller(names()), scales = 'free_x'))) +
+          ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
+                         axis.title = ggplot2::element_text(size = 12),
+                         panel.spacing = ggplot2::unit(1, "lines"),
+                         plot.margin = ggplot2::unit(c(0, 0, 2, 0), 'cm'),
+                         panel.background = ggplot2::element_rect(colour = 'black'))
       
-      if(input$gc_type == 'Events') {
-        plot <- plot + 
-          ggplot2::facet_wrap(~event, scales = 'free', ncol = 2,
-                             labeller = ggplot2::as_labeller(names())) 
         total_height <- 180 + 180 * length(input$gc_event)
-      }
       
-      plotly::ggplotly(plot, height = total_height, dynamicTicks = T, tooltip = "fill")
+      plotly::ggplotly(comp_plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
 
     ## ms file -------------------------------------------------------------------------------------
@@ -140,7 +138,7 @@ raw_server <- function(id, app_state) {
       shiny::req(input$ms_yaxis)
       dates <- lubridate::ymd_hms(input$msplot_gen_date_window)
 
-      plot <- app_state$ms() %>%
+      ms_plot <- app_state$ms() %>%
         dplyr::filter(dplyr::between(time_absolute_date_time, dates[1], dates[2]) &
                 event %in% input$ms_event) %>%
         tidyr::pivot_longer(cols = 5:ncol(.), names_to = 'Compound', values_to = 'value') %>%
@@ -148,22 +146,23 @@ raw_server <- function(id, app_state) {
         dplyr::mutate(Compound = stringr::str_replace_all(Compound, '_', ' ')) %>%
         dplyr::filter(Compound %in% input$ms_yaxis) %>%
         tidyr::drop_na(event) %>%
-        ggplot2::ggplot(ggplot2::aes(x = .data[[input$ms_xaxis]], y = value, color = Compound)) +
-        ggplot2::geom_line() +
-        ggplot2::labs(x = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
-                      y = "Arbitrary unit (a.u)") +
-        ggplot2::facet_wrap(~event, scales = ifelse(input$scale == TRUE, 'fixed', 'free'),
-                            ncol = 2, labeller = ggplot2::as_labeller(names())) +
-        ggplot2::theme_bw()  +
-        ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
-                       axis.title = ggplot2::element_text(size = 12),
-                       panel.spacing = ggplot2::unit(1, "lines"),
-                       panel.background = ggplot2::element_rect(colour = 'black'),
-                       plot.margin = ggplot2::unit(c(0, 0, 2, 2), units = 'cm'))
+        plot(x = .data[[input$ms_xaxis]],
+             y = value,
+             color = Compound,
+             lines = T,
+             xlab = ifelse(input$ms_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'),
+             ylab = "Arbitrary unit (a.u)",
+             facet = 'event',
+             args = list(facet = list(scales = ifelse(input$scale == TRUE, 'fixed', 'free'),
+                                      ncol = 2, labeller = ggplot2::as_labeller(names())))) +
+          ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
+                         axis.title = ggplot2::element_text(size = 12),
+                         panel.spacing = ggplot2::unit(1, "lines"),
+                         panel.background = ggplot2::element_rect(colour = 'black'),
+                         plot.margin = ggplot2::unit(c(0, 0, 2, 2), units = 'cm'))
 
       total_height <- 180 + 180 * length(input$ms_event)
-      plotly::ggplotly(plot, height = total_height,
-               dynamicTicks = T, tooltip = c('color', 'x', 'y'))
+      plotly::ggplotly(ms_plot, height = total_height, dynamicTicks = T, tooltip = c('color', 'x', 'y'))
     })
 
     fit <- shiny::reactive({
@@ -195,8 +194,7 @@ raw_server <- function(id, app_state) {
       shiny::req(input$msplot_gen_date_window)
 
       par(mar = c(5, 4, 1.5, 2))
-      plot(x = fit()$x, y = fit()$y, type = 'l',
-            bty = 'n', xlab = '', ylab = '')
+      base::plot(x = fit()$x, y = fit()$y, type = 'l', bty = 'n', xlab = '', ylab = '')
     })
     }
 )}

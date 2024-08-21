@@ -50,17 +50,21 @@ quality_server <- function(id, app_state) {
           dplyr::transmute(date_time, deriv = norm_deriv(normoliter_out)) %>%
           dplyr::group_by(group = rep(dplyr::row_number(), each = 5, length.out = dplyr::n())) %>%
           dplyr::summarise(time = mean(date_time), value = mean(deriv, na.rm = T) %>% round(3)) %>%
-          ggplot2::ggplot() +
-          ggplot2::geom_line(ggplot2::aes(x = time, y = value), linewidth = 0.2) +
-          ggplot2::labs(x = "Time", y = "Normalized milimeters rate") +
-          ggplot2::theme_bw()
-
+          plot(x = time,
+               y = value,
+               lines = T,
+               xlab = 'Time',
+               ylab = "Normalized milimeters rate",
+               args = list(lines = list(linewidth = 0.2))     
+          )
       }, error = \(e) {
-        ggplot(app_state$bd()) +
-          ggplot2::geom_line(ggplot2::aes(x = date_time, y = normoliter_out)) +
-          ggplot2::labs(x = "Time", y = "Normalized milimeters",
-                        title = 'Flow rate not possible') +
-          ggplot2::theme_bw()
+        plot(data = app_state$bd(),
+             x = date_time,
+             y = normoliter_out,
+             xlab = "Time",
+             ylab = "Normolized milimeters",
+             title = "Flow rate not possible"
+        )
       })
 
       plotly::ggplotly(plot)
@@ -98,13 +102,15 @@ quality_server <- function(id, app_state) {
 
       plot <- app_state$bd() %>%
         dplyr::mutate(difference = tic_300_pv - te_320) %>%
-        ggplot2::ggplot() +
-          ggplot2::geom_line(ggplot2::aes(x = te_310, y = difference), linewidth = 0.2) +
-          ggplot2::facet_wrap(~event, scales = 'fixed') +
-          ggplot2::labs(x = "Temperature (°C)", y = "Temperature differences (°C)") +
-          ggplot2::theme_bw() +
+        plot(x = te_310,
+             y = difference,
+             lines = T,
+             facet = "event",
+             xlab = "Temperature (°C)",
+             ylab = "Temperature differences (°C)",
+             args = list(lines = list(linewidth = 0.2))) +
           ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = 'bold'))
-
+        
       plotly::ggplotly(plot)
     })
 
