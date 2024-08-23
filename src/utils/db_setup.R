@@ -21,8 +21,8 @@ db_setup <- function(){
   if(!duckdb::dbExistsTable(con, "settings")) {
 
     fields <- c("ID" = "INTEGER", "Compound" = "VARCHAR", "Type" = "VARCHAR",
-                "MFC_1" = "INTEGER", "MFC_2" = "INTEGER", "MFC_3" = "INTEGER",
-                "MFC_4" = "INTEGER", "reaction" = "VARCHAR")
+                "CMP_1" = "INTEGER", "CMP_2" = "INTEGER", "CMP_3" = "INTEGER",
+                "CMP_4" = "INTEGER", "reaction" = "VARCHAR")
 
     DBI::dbCreateTable(conn = con,
                        name = "settings",
