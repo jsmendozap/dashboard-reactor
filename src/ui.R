@@ -35,6 +35,7 @@ ui <- bs4Dash::dashboardPage(title = 'Experiment control',
   bs4Dash::dashboardBody(bs4Dash::tabItems(reaction_ui('reaction'), log_ui('log'), quality_ui('quality'),
                          raw_data_ui('raw'), chemometric_ui('chem')),
                          tags$head(shiny::includeCSS("www/custom.css")),
-                         useShinyToastify(),
+                         shinyToastify::useShinyToastify(),
+                         prompter::use_prompt(),
                          reactable.extras::reactable_extras_dependency())
 )
