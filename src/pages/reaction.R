@@ -13,22 +13,22 @@ reaction_ui <- function(id){
                             bs4Dash::column(width = 2, shinyWidgets::pickerInput(ns('c_type'), 'Type', choices)),
                             prompter::add_prompt(
                               bs4Dash::column(width = 1, shiny::numericInput(ns("mfc1"),
-                                              label = HTML(paste0("% x",tags$sub("1"))), value = NA)),
+                                              label = HTML(paste0("% y",tags$sub("1"))), value = NA)),
                               position = "top", message = "Composition of MFC 1", rounded = T, arrow = F
                             ),
                             prompter::add_prompt(
                               bs4Dash::column(width = 1, shiny::numericInput(ns("mfc2"),
-                                              label = HTML(paste0("% x",tags$sub("2"))), value = NA)),
+                                              label = HTML(paste0("% y",tags$sub("2"))), value = NA)),
                               position = "top", message = "Composition of MFC 2", rounded = T, arrow = F
                             ),
                             prompter::add_prompt(
                               bs4Dash::column(width = 1, shiny::numericInput(ns("mfc3"),
-                                              label = HTML(paste0("% x",tags$sub("3"))), value = NA)),
+                                              label = HTML(paste0("% y",tags$sub("3"))), value = NA)),
                               position = "top", message = "Composition of MFC 3", rounded = T, arrow = F
                             ),
                             prompter::add_prompt(
                               bs4Dash::column(width = 1, shiny::numericInput(ns("mfc4"),
-                                              label = HTML(paste0("% x",tags$sub("4"))), value = NA)),
+                                              label = HTML(paste0("% y",tags$sub("4"))), value = NA)),
                               position = "top", message = "Composition of MFC 4", rounded = T, arrow = F
                             ),
                             div(

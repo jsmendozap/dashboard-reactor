@@ -36,8 +36,11 @@ reaction_server <- function(id) {
 
     output$compounds_table <- reactable::renderReactable({
       table() %>%
-        dplyr::rename_with(.fn = ~stringr::str_replace_all(.x, '_', ' '), .cols = dplyr::contains('CMP')) %>%
-        custom_reactable(columns = list(Compound = reactable::colDef(minWidth = 250)),
+        custom_reactable(columns = list(Compound = reactable::colDef(minWidth = 250),
+                                        CMP_1 = reactable::colDef(name = htmltools::HTML(paste0("% y",tags$sub("1"))), html = T),
+                                        CMP_2 = reactable::colDef(name = htmltools::HTML(paste0("% y",tags$sub("2"))), html = T),
+                                        CMP_3 = reactable::colDef(name = htmltools::HTML(paste0("% y",tags$sub("3"))), html = T),
+                                        CMP_4 = reactable::colDef(name = htmltools::HTML(paste0("% y",tags$sub("4"))), html = T)),
                          style = "border-radius: 3px", selection = 'single'
                         )
     })

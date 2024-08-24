@@ -11,6 +11,7 @@ plot <- function(
   ylab,
   title = NULL,
   scale_y = NULL,
+  custom_color = F,
   args = list(),
   ...
 ) {
@@ -36,6 +37,12 @@ plot <- function(
         } else {
           ggplot2::facet_wrap(~ .data[[facet]])
         }
+      },
+      if(custom_color) {
+        
+        cmp <- compounds %>% {setNames(.$color, .$name)}
+        ggplot2::scale_fill_manual(values = cmp[names(cmp) %in% unique(data$Compound)])
+        
       },
       if(!is.null(scale_y)) do.call(ggplot2::scale_y_continuous, scale_y)
     )

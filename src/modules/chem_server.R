@@ -123,6 +123,7 @@ chem_server <- function(id, app_state) {
              xlab = 'Time (min)',
              ylab = 'Molar flow (mol/h)',
              facet = "event",
+             custom_color = T,
              args = list(
               area = list(alpha = 0.6, color = 'black', linewidth = 0.2),
               facet = list(scales = 'fixed', ncol = 2, labeller = ggplot2::as_labeller(event_names))
@@ -133,7 +134,7 @@ chem_server <- function(id, app_state) {
                        panel.spacing = ggplot2::unit(0.5, "cm"),
                        plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
                        panel.background = ggplot2::element_rect(colour = 'black'))
-
+        
       total_height <- 180 * length(unique(chem_values()$event))
       plotly::ggplotly(molar_plot, height = total_height, dynamicTicks = T, tooltip = "fill")
     })
@@ -204,6 +205,8 @@ chem_server <- function(id, app_state) {
         ) +
         ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
                        axis.title.y = ggplot2::element_text(size = 12),
+                       panel.spacing = ggplot2::unit(0.5, "cm"),
+                       plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
                        panel.background = ggplot2::element_rect(colour = 'black'))
                        
       total_height <- 180 + 180 * length(input$graph_event)/2
@@ -251,6 +254,8 @@ chem_server <- function(id, app_state) {
         ) + 
           ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
                          axis.title.y = ggplot2::element_text(size = 12),
+                         panel.spacing = ggplot2::unit(0.5, "cm"),
+                         plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
                          panel.background = ggplot2::element_rect(colour = 'black'))
         
         total_height <- 180 + 180 * length(input$graph_event)/2

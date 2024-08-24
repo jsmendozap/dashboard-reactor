@@ -57,6 +57,7 @@ raw_server <- function(id, app_state) {
              ylab = "Composition",
              area = T, 
              hline = T, 
+             custom_color = T,
              xlab = ifelse(input$gc_xaxis == 'tic_300_pv','Temperature (°C)', 'Reaction time (min)'), 
              args = list(area = list(alpha = 0.6, color = 'black', linewidth = 0.2),
                          hline = list(yintercept = 100, linetype = 'dashed'),
@@ -66,7 +67,7 @@ raw_server <- function(id, app_state) {
                          panel.spacing = ggplot2::unit(1, "lines"),
                          plot.margin = ggplot2::unit(c(0, 0, 2, 0), 'cm'),
                          panel.background = ggplot2::element_rect(colour = 'black'))
-      
+        
         total_height <- 180 + 180 * length(input$gc_event)
       
       plotly::ggplotly(comp_plot, height = total_height, dynamicTicks = T, tooltip = "fill")
