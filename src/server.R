@@ -76,9 +76,10 @@ server <- function(input, output) {
                                                       dplyr::mutate(time_absolute_date_time = as.character(time_absolute_date_time))
                                                   }, error = \(e) NULL),
                                                   path = path()))
-
+      
+      filename <- path() %>% as.character %>% strsplit('/') %>% unlist %>% .[length(.)]
       file.copy(from = file.path(tempdir(), 'report.html'),
-                to = file.path(path(), 'report.html'))
+                to = file.path(path(), paste0(filename, '.html')))
     }
   )
 

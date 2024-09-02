@@ -54,16 +54,18 @@ chem_server <- function(id, app_state) {
     })
 
     chem_values <- shiny::eventReactive(input$btn_flow, {
-
-      sel_events <- function(x, qis) {
-        events <- x %>% unique
+      
+      sel_events <- function(which) {
+        events <- app_state$bd() %>%
+                    dplyr::distinct(event, name) %>%
+                    dplyr::pull({{ which }})
         filter <- shiny::reactiveValuesToList(qis) %>% unlist %>% purrr::discard(\(x) nchar(x) == 0) %>% names %>% as.numeric
         events[filter]
       }
 
       data.frame(
-        event = sel_events(app_state$bd()$event, qis),
-        name = sel_events(app_state$bd()$name, qis),
+        event = sel_events("event"),
+        name = sel_events("name"),
         technique = shiny::reactiveValuesToList(tech) %>% unlist %>% purrr::discard(~.x == "None"),
         is = shiny::reactiveValuesToList(is) %>% unlist %>% purrr::discard(~.x == "None") %>% tolower,
         qis = shiny::reactiveValuesToList(qis) %>% unlist %>% as.numeric %>% purrr::discard(is.na)) %>%
