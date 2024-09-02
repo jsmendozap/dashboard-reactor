@@ -28,7 +28,7 @@ server <- function(input, output) {
   df <- shiny::reactive({
     shiny::req(path())
     tryCatch({
-      grep("*.xlsx", dir(path(), full.names = T), value = TRUE) %>% load_file
+      tools::list_files_with_exts(dir = path(), exts = "xlsx") %>% load_file
     }, error = \(e) { NULL })
   })
 
@@ -41,14 +41,14 @@ server <- function(input, output) {
   gc <- shiny::reactive({
     shiny::req(path())
     tryCatch({
-      grep("*.txt", dir(path(), full.names = T), value = TRUE) %>% load_gc(bd = bd())
+      tools::list_files_with_exts(dir = path(), exts = "txt") %>% load_gc(bd = bd())
     }, error = \(e) { NULL })
   })
 
   ms <- shiny::reactive({
     shiny::req(path())
     tryCatch({
-      grep("*.dat", dir(path(), full.names = T), value = TRUE) %>% load_ms(bd = bd())
+      tools::list_files_with_exts(dir = path(), exts = "dat") %>% load_ms(bd = bd())
     }, error = \(e) { NULL })
   })
 
