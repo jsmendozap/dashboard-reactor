@@ -11,7 +11,8 @@ server <- function(input, output) {
     app_state$ms <- ms
     app_state$path <- path
     app_state$setting <- setting
-  }) %>% shiny::bindEvent(c(df(), bd(), gc(), ms(), path(), setting()))
+    app_state$comment <- comment
+  }) %>% shiny::bindEvent(c(df(), bd(), gc(), ms(), path(), setting(), comment()))
 
   volumes <- c(Home = fs::path_home(),  shinyFiles::getVolumes()())
   shinyFiles::shinyDirChoose(input, "directory", roots = volumes)
@@ -55,11 +56,11 @@ server <- function(input, output) {
   ## Pages -----------------------------------------------------------------------
 
   setting <- reaction_server('reaction')
-  log_server('log', app_state)
+  comment <- log_server('log', app_state)
   quality_server('quality', app_state)
   raw_server('raw', app_state)
   chem_server('chem', app_state)
-
+  
   ### Report -------------------------------------------------------------------
 
   output$report <- shiny::downloadHandler(
@@ -70,7 +71,8 @@ server <- function(input, output) {
       file.copy("report.qmd", tempReport, overwrite = TRUE)
 
       quarto::quarto_render(input = tempReport,
-                            execute_params = list(df = df(), bd = bd(), gc = gc(),
+                            execute_params = list(bd = bd() %>% dplyr::left_join(app_state$comment()),
+                                                  df = df(), gc = gc(),
                                                   ms = tryCatch({
                                                     ms() %>%
                                                       dplyr::mutate(time_absolute_date_time = as.character(time_absolute_date_time))

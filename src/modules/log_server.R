@@ -1,6 +1,8 @@
 log_server <- function(id, app_state) {
   shiny::moduleServer(id, function(input, output, session){
 
+    ns <- shiny::NS(id)
+
     selected1 <- shiny::reactive({ input$var })
     selected2 <- shiny::reactive({ input$var2 })
 
@@ -20,14 +22,25 @@ log_server <- function(id, app_state) {
       app_state$bd() %>%
         dplyr::slice_head(n = 1, by = event) %>%
         dplyr::select(event, date_time, name, time_duration) %>%
+        dplyr::mutate(obs = "") %>%
         custom_reactable(
           columns = list(
-            event = reactable::colDef(name = 'Event', width = 100),
+            event = reactable::colDef(name = 'Event', width = 80),
             date_time = reactable::colDef(name = 'Start time', width = 200),
-            name = reactable::colDef(name = 'Event name', minWidth = 200),
-            time_duration = reactable::colDef(name = 'Duration', width = 100)
+            name = reactable::colDef(name = 'Event name', minWidth = 100),
+            time_duration = reactable::colDef(name = 'Duration', width = 100),
+            obs = reactable::colDef(name = 'Observations', width = 150,
+                                    cell = reactable.extras::text_extra(ns("comment"), class = 'obs'))
           ), selection = 'single'
         )
+    })
+
+    obs <- shiny::reactiveValues()
+
+    shiny::observeEvent(input$comment, {
+      row <- as.character(input$comment$row)
+      obs[[row]] <- input$comment$value
+      app_state$comment <- obs
     })
 
     output$leak <- shiny::renderUI({
@@ -78,5 +91,20 @@ log_server <- function(id, app_state) {
     output$fi_140 <- bs4Dash::renderValueBox({
       reactor_values(app_state$bd(), 'fi_140', 'Nitrogen')
     })
-  })
+
+    return(shiny::reactive({
+      
+        shiny::reactiveValuesToList(obs) %>% 
+        {
+          if(length(.) > 0) {
+            utils::stack(.) %>%
+            dplyr::rename(comment = values, event = ind) %>%
+            dplyr::mutate(event = as.double(as.character(event)))
+          }
+        }
+      })
+    )
+
+    })
 }
+

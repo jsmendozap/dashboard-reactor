@@ -75,14 +75,16 @@ if(!is.na(test[1])){
 params$bd %>%
   as_tibble() %>%
   slice_head(n = 1, by = event) %>%
-      select(event, date_time, name, time_duration) %>%
-      mutate(date_time = as.POSIXct(date_time, origin="1970-01-01", tz="UTC")) %>%
+      select(event, date_time, name, time_duration, comment) %>%
+      mutate(date_time = as.POSIXct(date_time, origin="1970-01-01", tz="UTC"),
+             comment = dplyr::na_if(comment, ".na.character")) %>%
       custom_reactable(
         columns = list(
           event = colDef(name = 'Event', width = 100),
           date_time = colDef(name = 'Start time', width = 200),
           name = colDef(name = 'Event name', minWidth = 200),
-          time_duration = colDef(name = 'Duration', width = 100)
+          time_duration = colDef(name = 'Duration', width = 100),
+          comment = colDef(name = 'Observations', width = 150)
         )
       )
 ```

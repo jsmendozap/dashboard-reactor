@@ -13,7 +13,7 @@ log_ui <- function(id){
   bs4Dash::tabItem(tabName = 'log',
                shiny::fluidRow(
                  bs4Dash::column(
-                   width = 8,
+                   width = 9,
                    bs4Dash::box(title = "Events summary",
                        status = 'info',
                        solidHeader = T,
@@ -21,7 +21,7 @@ log_ui <- function(id){
                        reactable::reactableOutput(ns('log'))
                        )),
                  bs4Dash::column(
-                   width = 4,
+                   width = 3,
                    bs4Dash::box(title = "Leak test", width = 12,
                        status = 'info', solidHeader = T,
                        shiny::uiOutput(ns('leak'))),

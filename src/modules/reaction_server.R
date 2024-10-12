@@ -116,6 +116,6 @@ reaction_server <- function(id) {
         custom_reactable()
     })
 
-    return(reactive({ input$reactions_db }))
+    return(shiny::reactive({ input$reactions_db }))
   })
 }

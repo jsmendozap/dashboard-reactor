@@ -29,6 +29,12 @@
   width: 50px;
 }
 
+.obs {
+  border: none;
+  width: 120px;
+  height: 30px;
+}
+
 .hint--no-arrow::after {
   background-color: #575656d0 !important; 
   font-size: 12px !important; 
