@@ -20,6 +20,7 @@ log_server <- function(id, app_state) {
       shiny::req(app_state$bd)
 
       app_state$bd() %>%
+        dplyr::filter(name == mode(name), .by = event) %>%
         dplyr::slice_head(n = 1, by = event) %>%
         dplyr::select(event, date_time, name, time_duration) %>%
         dplyr::mutate(obs = "") %>%
@@ -31,14 +32,15 @@ log_server <- function(id, app_state) {
             time_duration = reactable::colDef(name = 'Duration', width = 100),
             obs = reactable::colDef(name = 'Observations', width = 150,
                                     cell = reactable.extras::text_extra(ns("comment"), class = 'obs'))
-          ), selection = 'single'
+          ),
+          selection = 'single'
         )
     })
 
     obs <- shiny::reactiveValues()
 
     shiny::observeEvent(input$comment, {
-      row <- as.character(input$comment$row)
+      row <- unique(app_state$bd()$event)[input$comment$row] %>% as.character()
       obs[[row]] <- input$comment$value
       app_state$comment <- obs
     })

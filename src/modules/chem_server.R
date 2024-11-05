@@ -93,7 +93,7 @@ chem_server <- function(id, app_state) {
 
     output$flow_events <- shiny::renderUI({
 
-      selected <- chem_values() %>% dplyr::pull(event) %>% unique()
+      selected <- chem_values() %>% dplyr::pull(event) %>% unique() 
 
       shinyWidgets::pickerInput(
         inputId = ns("graph_event"), label = "Select events to plot",
@@ -108,7 +108,7 @@ chem_server <- function(id, app_state) {
       shiny::req(input$graph_event)
 
       event_names <- chem_values() %>%
-        dplyr::summarise(name = unique(name), .by = event) %>%
+        dplyr::summarise(name = unique(name), .by = event) %>% 
         dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
         {setNames(.$name, .$event)}
 
@@ -273,6 +273,6 @@ chem_server <- function(id, app_state) {
     #ggplot2::stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +
     #ggplot2::stat_summary(fun = min, geom = "point", shape = 25) +
     #ggplot2::stat_summary(fun = max, geom = "point", shape = 19) +
-    
+
   })
 }

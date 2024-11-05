@@ -52,15 +52,15 @@ server <- function(input, output) {
       tools::list_files_with_exts(dir = path(), exts = "dat") %>% load_ms(bd = bd())
     }, error = \(e) { NULL })
   })
-
+  
   ## Pages -----------------------------------------------------------------------
-
+  
   setting <- reaction_server('reaction')
   comment <- log_server('log', app_state)
   quality_server('quality', app_state)
   raw_server('raw', app_state)
   chem_server('chem', app_state)
-  
+
   ### Report -------------------------------------------------------------------
 
   output$report <- shiny::downloadHandler(
@@ -71,7 +71,11 @@ server <- function(input, output) {
       file.copy("report.qmd", tempReport, overwrite = TRUE)
 
       quarto::quarto_render(input = tempReport,
-                            execute_params = list(bd = bd() %>% dplyr::left_join(app_state$comment()),
+                            execute_params = list(bd = if(is.null(app_state$comment())) {
+                                                        bd() %>% dplyr::mutate(comment = "")
+                                                      } else {
+                                                        bd() %>% dplyr::left_join(app_state$comment())
+                                                      },
                                                   df = df(), gc = gc(),
                                                   ms = tryCatch({
                                                     ms() %>%
