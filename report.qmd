@@ -263,15 +263,36 @@ if(is.null(params$ms)) {
 
 ## Chemometrics
 
-::: {.panel-tabset}
-
-### Molar flow
-
+### Summary 
 ```{r}
 #| column: body-outset
 
 chem_values <- data.frame(params$chem_values) %>% 
   dplyr::mutate(time = as.numeric(time))
+
+chem_values %>%
+  dplyr::slice_head(n = 1, by = event) %>%
+  dplyr::select(1:5) %>%
+  custom_reactable(
+        columns = list(
+          event = colDef(name = 'Event', width = 100),
+          name = colDef(name = 'Name', width = 300),
+          tecnique = colDef(name = 'Technique', minWidth = 100),
+          is = colDef(name = 'Internal Standard', width = 200),
+          qis = colDef(name = 'QIS', width = 100)
+        )
+      )
+
+```
+
+### Plots
+
+::: {.panel-tabset}
+
+#### Molar flow
+
+```{r}
+#| column: body-outset
 
 event_names <- chem_values %>%
         dplyr::summarise(name = unique(name), .by = event) %>% 
@@ -304,7 +325,7 @@ total_height <- 180 * length(unique(chem_values$event))
 plotly::ggplotly(molar_plot, height = total_height, dynamicTicks = T, tooltip = "fill")
 ```
 
-### Conversion
+#### Conversion
 
 ```{r}
 #| column: body-outset
@@ -340,9 +361,11 @@ total_height <- 180 + 180 * length(event_names)/1.5
 plotly::ggplotly(conversion_plot, height = total_height)
 ```
 
-### Mass balance
+#### Mass balance
 
 ```{r}
+#| column: body-outset
+
 mass_plot <- params$mass_balance %>%
   data.frame() %>%
   dplyr::mutate(time = as.numeric(time)) %>%
