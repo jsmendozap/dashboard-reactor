@@ -57,9 +57,16 @@ server <- function(input, output) {
   
   setting <- reaction_server('reaction')
   comment <- log_server('log', app_state)
+  chemometric <- chem_server('chem', app_state)
   quality_server('quality', app_state)
   raw_server('raw', app_state)
-  chem_server('chem', app_state)
+
+  shiny::observe({
+    app_state$chem_values <- chemometric$chem_values 
+    app_state$molar_flow <- chemometric$molar_flow
+    app_state$conversion <- chemometric$conversion
+    app_state$mass_balance <- chemometric$mass_balance
+  })
 
   ### Report -------------------------------------------------------------------
 
@@ -81,7 +88,13 @@ server <- function(input, output) {
                                                     ms() %>%
                                                       dplyr::mutate(time_absolute_date_time = as.character(time_absolute_date_time))
                                                   }, error = \(e) NULL),
-                                                  path = path()))
+                                                  path = path(), 
+                                                  chem_values = app_state$chem_values(),
+                                                  molar_flow = app_state$molar_flow(),
+                                                  conversion = app_state$conversion(),
+                                                  mass_balance = app_state$mass_balance()
+                                                )
+                            )
       
       filename <- path() %>% as.character %>% strsplit('/') %>% unlist %>% .[length(.)]
       file.copy(from = file.path(tempdir(), 'report.html'),

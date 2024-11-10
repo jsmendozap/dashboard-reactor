@@ -11,11 +11,98 @@ params:
   gc: NA
   ms: NA
   path: NA
+  chem_values: NA
+  molar_flow: NA
+  conversion: NA
+  mass_balance: NA
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
-pacman::p_load(reactable, tidyverse, reactablefmtr, plotly, dygraphs)
+pacman::p_load(reactable, tidyverse, reactablefmtr, plotly, dygraphs, magrittr)
+```
+
+```{r}
+compounds <- tibble::tribble(
+  ~name,                ~color,
+  "Hydrogen",          "orange",      
+  "Carbon monoxide",   "lightgreen",  
+  "Carbon dioxide",    "red",         
+  "Methane",           "blue",        
+  "Ethane",            "purple",      
+  "Ethylene",          "yellow",      
+  "Propane",           "black", 
+  "Propylene",         "royalblue",   
+  "n-butane",          "deeppink",    
+  "i-butane",          "mediumseagreen", 
+  "Cis-2-butene",      "darkviolet",  
+  "t-2-butene",        "chartreuse",  
+  "Nitrogen",          "dodgerblue",  
+  "Argon",             "turquoise",   
+  "Water",             "olive"        
+)
+
+change_str <- function(string, from, to, lower = F){
+  purrr::map_vec(.x = string,
+                 .f = ~.x %>%
+                   {ifelse(lower, tolower(.), stringr::str_to_title(.))} %>%
+                   stringr::str_replace_all(pattern = from, replacement = to)
+  )
+}
+
+custom_plot <- function(
+  data, 
+  x,
+  y,
+  points = F,
+  lines = F,
+  hline = F,
+  area = F,
+  facet = NULL,
+  xlab,
+  ylab,
+  title = NULL,
+  scale_y = NULL,
+  custom_color = F,
+  args = list(),
+  ...
+) {
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = {{ x }}, y = {{ y }}, ...))
+
+  p <- p + 
+    list(
+      if(points){
+        if ("points" %in% names(args)) {do.call(ggplot2::geom_point, args$points)} else {ggplot2::geom_point()}
+      },
+      if(lines){
+        if ("lines" %in% names(args)) {do.call(ggplot2::geom_line, args$lines)} else {ggplot2::geom_line()}
+      },
+      if(area){
+        if ("area" %in% names(args)) {do.call(ggplot2::geom_area, args$area)} else {ggplot2::geom_area()}
+      },
+      if(hline){
+        if ("hline" %in% names(args)) {do.call(ggplot2::geom_hline, args$hline)} else {ggplot2::geom_hline()}
+      },
+      if(!is.null(facet)){ 
+        if ("facet" %in% names(args)) {
+          purrr::exec(.f = ggplot2::facet_wrap, ~.data[[facet]], !!!args$facet)
+        } else {
+          ggplot2::facet_wrap(~ .data[[facet]])
+        }
+      },
+      if(custom_color) {
+        
+        cmp <- compounds %>% {setNames(.$color, .$name)}
+        ggplot2::scale_fill_manual(values = cmp[names(cmp) %in% unique(data$Compound)])
+        
+      },
+      if(!is.null(scale_y)) do.call(ggplot2::scale_y_continuous, scale_y)
+    )
+    
+    p <- p + ggplot2::labs(x = xlab, y = ylab, title = title) + ggplot2::theme_bw()
+    
+    return(p)
+}
 ```
 
 ```{css}
@@ -173,3 +260,110 @@ if(is.null(params$ms)) {
 }
 
 ```
+
+## Chemometrics
+
+::: {.panel-tabset}
+
+### Molar flow
+
+```{r}
+#| column: body-outset
+
+chem_values <- data.frame(params$chem_values) %>% 
+  dplyr::mutate(time = as.numeric(time))
+
+event_names <- chem_values %>%
+        dplyr::summarise(name = unique(name), .by = event) %>% 
+        dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
+        {setNames(.$name, .$event)}
+
+molar_plot <- params$molar_flow %>%
+  data.frame() %>%
+  dplyr::mutate(time = as.numeric(time)) %>%
+  custom_plot(x = time,
+      y = value, 
+      fill = Compound, 
+      area = T,
+      xlab = 'Time (min)',
+      ylab = 'Molar flow (mol/h)',
+      facet = "event",
+      custom_color = T,
+      args = list(
+        area = list(alpha = 0.6, color = 'black', linewidth = 0.2),
+        facet = list(scales = 'fixed', ncol = 2, labeller = ggplot2::as_labeller(event_names))
+      )
+  ) +
+  ggplot2::theme(axis.text = ggplot2::element_text(color = 'black', size = 10),
+                  axis.title = ggplot2::element_text(size = 12),
+                  panel.spacing = ggplot2::unit(0.5, "cm"),
+                  plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
+                  panel.background = ggplot2::element_rect(colour = 'black'))
+
+total_height <- 180 * length(unique(chem_values$event))
+plotly::ggplotly(molar_plot, height = total_height, dynamicTicks = T, tooltip = "fill")
+```
+
+### Conversion
+
+```{r}
+#| column: body-outset
+
+event_names <-chem_values %>%
+        dplyr::filter(technique == 'TOS') %>%
+        dplyr::summarise(name = unique(name), .by = event) %>%
+        dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
+        {setNames(.$name, .$event)} 
+
+conversion_plot <- params$conversion %>%
+        data.frame() %>%
+        dplyr::mutate(time = as.numeric(time)) %>%
+        custom_plot(x = time, 
+                    y = value, 
+                    fill = Compound,
+                    shape = Compound,
+                    lines = T,
+                    points = T,
+                    xlab = 'Time (min)',
+                    ylab = 'Conversion (%)',
+                    facet = 'event',
+                    scale_y = list(n.breaks = 10),
+                    args = list(facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names)))
+                  ) +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
+                        axis.title.y = ggplot2::element_text(size = 12),
+                        panel.spacing = ggplot2::unit(0.5, "cm"),
+                        plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
+                        panel.background = ggplot2::element_rect(colour = 'black'))
+
+total_height <- 180 + 180 * length(event_names)/1.5
+plotly::ggplotly(conversion_plot, height = total_height)
+```
+
+### Mass balance
+
+```{r}
+mass_plot <- params$mass_balance %>%
+  data.frame() %>%
+  dplyr::mutate(time = as.numeric(time)) %>%
+  custom_plot(x = time,
+        y = value, 
+        fill = Compound,
+        lines = T,
+        points = T,
+        xlab = "Time (min)",
+        ylab = "Mass balance",
+        facet = 'event',
+        scale_y = list(n.breaks = 10),
+        args = list(facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names)))
+  ) + 
+  ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
+                  axis.title.y = ggplot2::element_text(size = 12),
+                  panel.spacing = ggplot2::unit(0.5, "cm"),
+                  plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
+                  panel.background = ggplot2::element_rect(colour = 'black'))
+
+plotly::ggplotly(mass_plot, height = total_height)
+```
+
+:::

@@ -102,22 +102,28 @@ chem_server <- function(id, app_state) {
       )
       })
 
-    output$molar_flow <- plotly::renderPlotly({
+    mf <- reactive({
       shiny::req(chem_values())
       shiny::req(input$graph_compounds)
       shiny::req(input$graph_event)
+      
+      chem_values() %>%
+        dplyr::select(event, time, 9:ncol(.)) %>%
+        tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+        dplyr::filter(!Compound %in% c('argon', 'nitrogen')) %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
+        dplyr::filter(Compound %in% input$graph_compounds & event %in% input$graph_event)
+    })
+    
+    output$molar_flow <- plotly::renderPlotly({
+      shiny::req(chem_values())
 
       event_names <- chem_values() %>%
         dplyr::summarise(name = unique(name), .by = event) %>% 
         dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
         {setNames(.$name, .$event)}
 
-      molar_plot <- chem_values() %>%
-        dplyr::select(event, time, 9:ncol(.)) %>%
-        tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
-        dplyr::filter(!Compound %in% c('argon', 'nitrogen')) %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
-        plotly::filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
+      molar_plot <- mf() %>%
         plot(x = time,
              y = value, 
              fill = Compound, 
@@ -182,17 +188,23 @@ chem_server <- function(id, app_state) {
         {setNames(.$name, .$event)} 
     })
 
-    output$conversion <- plotly::renderPlotly({
+    conversion <- shiny::reactive({
       req(app_state$setting())
-
-      conversion_plot <- chem_values() %>%
+      
+      chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
         dplyr::left_join(bypass() %>% dplyr::mutate(event = event + 1), by = dplyr::join_by('event')) %>%
         dplyr::mutate(dplyr::across(.cols = reactants(), 
                                     .fns = ~ 100 * ((get(paste0(dplyr::cur_column(), "_bypass")) - .)/get(paste0(dplyr::cur_column(), "_bypass"))))) %>%
         dplyr::select(time, event, dplyr::all_of(reactants())) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' '))
+    })
+
+    output$conversion <- plotly::renderPlotly({
+      req(conversion())
+
+      conversion_plot <-  conversion() %>%
         plot(x = time, 
              y = value, 
              fill = Compound,
@@ -217,7 +229,7 @@ chem_server <- function(id, app_state) {
 
     ### Mass balance -------------------------------------------------------------------------------------------
 
-    output$mass_balance <- plotly::renderPlotly({
+    mb <- shiny::reactive({
 
       c_in <- compounds %>%
         dplyr::mutate(name = change_str(name, " ", "_", T)) %>%
@@ -242,7 +254,13 @@ chem_server <- function(id, app_state) {
                                 .fns =  ~ .x / get(stringr::str_replace(dplyr::cur_column(), "_out", "_in")), 
                                 .names = "{stringr::str_replace(.col, '_out', '')}")) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = "Compound", values_to = "value") %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' '))
+    })
+
+    output$mass_balance <- plotly::renderPlotly({
+      req(mb())
+
+      mass_plot <- mb() %>%
         plot(x = time,
              y = value, 
              fill = Compound,
@@ -264,6 +282,13 @@ chem_server <- function(id, app_state) {
         plotly::ggplotly(mass_plot, height = total_height)
 
     })
+
+    return(list(
+      chem_values = chem_values,
+      molar_flow = mf,
+      conversion = conversion,
+      mass_balance = mb
+    ))
 
     ### Boxplot ------------------------------------------------------------------------------------------------
     
