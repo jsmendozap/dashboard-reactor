@@ -15,6 +15,14 @@ query <- function(operation, name = NULL, value = NULL){
       statement <- stringr::str_glue('SELECT * FROM {name} WHERE ("reaction" = \'{value}\')')
       DBI::dbGetQuery(con, statement) 
     },
+    delete = {
+      purrr::map2(.x = name, .y = c("reaction", "name"),
+                 .f = \(.x, .y) {
+                   statement <- stringr::str_glue("DELETE FROM {.x} WHERE {.y} = '{value}'")
+                   DBI::dbExecute(con, statement)
+                  } 
+                )
+    },
     tables = duckdb::dbListTables(con) %>% print()
   )
   

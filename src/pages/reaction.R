@@ -37,10 +37,16 @@ reaction_ui <- function(id){
                               style = "display: flex; text-align: center"
                             ),
                             style = "display: flex; align-items: center"
-                          ),
-                          reactable::reactableOutput(ns('compounds_table')),
+                          )
                         ),
                         shiny::br(),
+                        shiny::fluidRow(
+                          reactable::reactableOutput(ns('compounds_table'))
+                        ),
+                        shiny::br(),
+                        shiny::fluidRow(
+                          shiny::column(width = 4, shiny::uiOutput(ns('template')))
+                        ),
                         shinyWidgets::searchInput(
                           inputId = ns("save"),
                           label = "Save reaction",
@@ -51,11 +57,11 @@ reaction_ui <- function(id){
                 ),
                 shiny::tabPanel(title = "Load reaction",
                         shiny::fluidRow(
-                          bs4Dash::column(width = 3, 
-                                          shiny::uiOutput(ns("reactions_table"))
+                          shiny::div(width = 3,
+                            bs4Dash::column(width = 12, shiny::uiOutput(ns("reactions_table"))),
+                            bs4Dash::column(width = 12, bs4Dash::actionButton(ns("delete"), "Delete setting"))
                           ),
-                          bs4Dash::column(width = 9, 
-                                          reactable::reactableOutput(ns('setting'))
+                          bs4Dash::column(width = 9, reactable::reactableOutput(ns('setting'))
                           )
                         )        
                 )
