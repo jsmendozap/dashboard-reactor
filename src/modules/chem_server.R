@@ -283,21 +283,56 @@ chem_server <- function(id, app_state) {
 
     })
 
+    ### Boxplot ------------------------------------------------------------------------------------------------
+    
+    output$boxplot <- plotly::renderPlotly({
+
+      p <- chem_values() %>%
+        dplyr::filter(technique == 'TOS') %>%
+        dplyr::left_join(bypass() %>% dplyr::mutate(event = event + 1), by = dplyr::join_by('event')) %>%
+        dplyr::mutate(dplyr::across(.cols = reactants(), .fns = ~(get(paste0(dplyr::cur_column(), "_bypass")) - .))) %>%
+        dplyr::select(time, event, 10:20) %>%
+        tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
+        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
+        filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
+        ggplot(aes(x = Compound, y = value, fill = Compound)) +
+        geom_boxplot(show.legend = F) +
+        stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 1.5) +
+        stat_summary(fun = min, geom = "point", shape = 25) +
+        stat_summary(fun = max, geom = "point", shape = 19) +
+        labs(x = '', y = "Molar flow (mol/h)") +
+        facet_wrap(~event, scales = 'free', ncol = 2) +
+        theme_bw() +
+        theme(axis.text.y = element_text(color = 'black', size = 10),
+              axis.title.y = element_text(size = 12),
+              panel.background = element_rect(colour = 'black'),
+              axis.title.x = element_blank(),
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank())
+      
+      total_height <- 180 + 180 * length(input$graph_event)/2
+      boxp <- plotly::ggplotly(p, height = total_height)
+
+      boxp$x$data <- lapply(boxp$x$data, function(x) {
+        if (x$type == "box") {
+          x$q1 <- min(x$y)
+          x$q3 <- max(x$y)
+          x$boxpoints <- FALSE
+          x$whiskerwidth <- 0
+        }
+        return(x)
+      })
+
+      boxp
+
+    })
+
     return(list(
       chem_values = chem_values,
       molar_flow = mf,
       conversion = conversion,
       mass_balance = mb
     ))
-
-    ### Boxplot ------------------------------------------------------------------------------------------------
-    
-    #dplyr::filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
-    
-    #ggplot2::geom_boxplot() +
-    #ggplot2::stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 2) +
-    #ggplot2::stat_summary(fun = min, geom = "point", shape = 25) +
-    #ggplot2::stat_summary(fun = max, geom = "point", shape = 19) +
 
   })
 }

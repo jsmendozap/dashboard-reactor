@@ -45,7 +45,7 @@ reaction_ui <- function(id){
                         ),
                         shiny::br(),
                         shiny::fluidRow(
-                          shiny::column(width = 4, shiny::uiOutput(ns('template')))
+                          shiny::column(width = 4, shiny::uiOutput(ns('templ')))
                         ),
                         shinyWidgets::searchInput(
                           inputId = ns("save"),

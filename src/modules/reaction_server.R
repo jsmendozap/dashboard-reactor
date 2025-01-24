@@ -14,7 +14,7 @@ reaction_server <- function(id) {
       )
     )
 
-    output$template <- shiny::renderUI({
+    output$templ <- shiny::renderUI({
 
       if(react_table()) {
         shinyWidgets::pickerInput(inputId = ns('template'),
