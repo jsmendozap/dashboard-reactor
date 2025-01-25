@@ -15,6 +15,7 @@ params:
   molar_flow: NA
   conversion: NA
   mass_balance: NA
+  boxplot: NA
 ---
 
 ```{r setup, include=FALSE}
@@ -31,7 +32,7 @@ compounds <- tibble::tribble(
   "Methane",           "blue",        
   "Ethane",            "purple",      
   "Ethylene",          "yellow",      
-  "Propane",           "black", 
+  "Propane",           "gray", 
   "Propylene",         "royalblue",   
   "n-butane",          "deeppink",    
   "i-butane",          "mediumseagreen", 
@@ -58,6 +59,7 @@ custom_plot <- function(
   lines = F,
   hline = F,
   area = F,
+  boxp = F,
   facet = NULL,
   xlab,
   ylab,
@@ -82,6 +84,9 @@ custom_plot <- function(
       },
       if(hline){
         if ("hline" %in% names(args)) {do.call(ggplot2::geom_hline, args$hline)} else {ggplot2::geom_hline()}
+      },
+      if(boxp){
+        if ("boxp" %in% names(args)) {do.call(ggplot2::geom_boxplot, args$boxp)} else {ggplot2::geom_boxplot()}
       },
       if(!is.null(facet)){ 
         if ("facet" %in% names(args)) {
@@ -358,7 +363,7 @@ conversion_plot <- params$conversion %>%
                         panel.background = ggplot2::element_rect(colour = 'black'))
 
 total_height <- 180 + 180 * length(event_names)/1.5
-plotly::ggplotly(conversion_plot, height = total_height)
+plotly::ggplotly(conversion_plot, height = total_height, dynamicTicks = T)
 ```
 
 #### Mass balance
@@ -386,7 +391,74 @@ mass_plot <- params$mass_balance %>%
                   plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
                   panel.background = ggplot2::element_rect(colour = 'black'))
 
-plotly::ggplotly(mass_plot, height = total_height)
+plotly::ggplotly(mass_plot, height = total_height, dynamicTicks = T)
 ```
+
+```{r}
+#| column: body-outset
+#| warning: false
+
+params$mass_balance %>%
+  data.frame() %>%
+  dplyr::group_by(event, Compound) %>%
+  dplyr::summarise(avg = round(mean(value), 2), sd = round(sd(value), 2)) %>% 
+  custom_reactable(
+    columns = list(
+      event = reactable::colDef(name = 'Event'),
+      Compound = reactable::colDef(name = 'Compound'),
+      avg = reactable::colDef(name = 'Average'),
+      sd = reactable::colDef(name = 'Standard deviation')
+    ), style = "border-radius: '3px'"
+  )
+
+```
+
+#### Box plot
+
+```{r}
+#| column: body-outset
+
+p <- params$boxplot %>%
+  data.frame() %>%
+  custom_plot(x = Compound,
+              y = value, 
+              fill = Compound,
+              boxp = T,
+              xlab = "",
+              ylab = "Molar flow (mol/h)",
+              facet = 'event',
+              args = list(facet = list(scales = "free", ncol = 2, labeller = ggplot2::as_labeller(event_names)),
+                          boxp = list(show.legend = F)
+                          ),
+              custom_color = T
+              ) +
+              ggplot2::stat_summary(fun = mean, geom = "point", shape = 23, fill = "white", size = 2.5) +
+              ggplot2::stat_summary(fun = min, geom = "point", shape = 25, size = 2.5) +
+              ggplot2::stat_summary(fun = max, geom = "point", shape = 19, size = 2.5) +
+              ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
+                            axis.title.y = ggplot2::element_text(size = 12),
+                            panel.spacing = ggplot2::unit(0.5, "cm"),
+                            plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
+                            panel.background = ggplot2::element_rect(colour = 'black'),
+                            axis.title.x = element_blank(),
+                            axis.text.x = element_blank(),
+                            axis.ticks.x = element_blank()
+                            )
+
+boxp <- plotly::ggplotly(p, height = total_height)
+
+boxp$x$data <- lapply(boxp$x$data, function(x) {
+  if (x$type == "box") {
+    x$q1 <- min(x$y)
+    x$q3 <- max(x$y)
+    x$boxpoints <- FALSE
+    x$whiskerwidth <- 0
+  }
+  return(x)
+})
+
+boxp
+```
+
 
 :::

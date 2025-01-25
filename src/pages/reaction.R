@@ -61,7 +61,7 @@ reaction_ui <- function(id){
                             bs4Dash::column(width = 12, shiny::uiOutput(ns("reactions_table"))),
                             bs4Dash::column(width = 12, bs4Dash::actionButton(ns("delete"), "Delete setting"))
                           ),
-                          bs4Dash::column(width = 9, reactable::reactableOutput(ns('setting'))
+                          bs4Dash::column(width = 8, reactable::reactableOutput(ns('setting'))
                           )
                         )        
                 )

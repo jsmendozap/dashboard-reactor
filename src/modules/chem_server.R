@@ -363,7 +363,8 @@ chem_server <- function(id, app_state) {
       chem_values = chem_values,
       molar_flow = mf,
       conversion = conversion,
-      mass_balance = mb
+      mass_balance = mb,
+      boxplot = boxplot_data
     ))
 
   })

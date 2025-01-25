@@ -66,6 +66,7 @@ server <- function(input, output) {
     app_state$molar_flow <- chemometric$molar_flow
     app_state$conversion <- chemometric$conversion
     app_state$mass_balance <- chemometric$mass_balance
+    app_state$boxplot <- chemometric$boxplot
   })
 
   ### Report -------------------------------------------------------------------
@@ -92,7 +93,8 @@ server <- function(input, output) {
                                                   chem_values = app_state$chem_values(),
                                                   molar_flow = app_state$molar_flow(),
                                                   conversion = app_state$conversion(),
-                                                  mass_balance = app_state$mass_balance()
+                                                  mass_balance = app_state$mass_balance(),
+                                                  boxplot = app_state$boxplot()
                                                 )
                             )
       
