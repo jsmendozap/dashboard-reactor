@@ -224,7 +224,7 @@ chem_server <- function(id, app_state) {
                        panel.background = ggplot2::element_rect(colour = 'black'))
                        
       total_height <- 180 + 180 * length(input$graph_event)/2
-      plotly::ggplotly(conversion_plot, height = total_height)
+      plotly::ggplotly(conversion_plot, height = total_height, dynamicTicks = T)
     })
 
     ### Mass balance -------------------------------------------------------------------------------------------
@@ -254,8 +254,9 @@ chem_server <- function(id, app_state) {
                                 .fns =  ~ .x / get(stringr::str_replace(dplyr::cur_column(), "_out", "_in")), 
                                 .names = "{stringr::str_replace(.col, '_out', '')}")) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = "Compound", values_to = "value") %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' '))
-    })
+        dplyr::mutate(Compound = change_str(Compound, '_', ' '), value = value * 100) %>%
+        dplyr::filter(event %in% input$graph_event)
+      })
 
     output$mass_balance <- plotly::renderPlotly({
       req(mb())
@@ -270,7 +271,7 @@ chem_server <- function(id, app_state) {
              ylab = "Mass balance",
              facet = 'event',
              scale_y = list(n.breaks = 10),
-             args = list(facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names())))
+             args = list(facet = list(ncol = 1, labeller = ggplot2::as_labeller(event_names())))
         ) + 
           ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
                          axis.title.y = ggplot2::element_text(size = 12),
@@ -279,36 +280,67 @@ chem_server <- function(id, app_state) {
                          panel.background = ggplot2::element_rect(colour = 'black'))
         
         total_height <- 180 + 180 * length(input$graph_event)/2
-        plotly::ggplotly(mass_plot, height = total_height)
+        plotly::ggplotly(mass_plot, height = total_height, dynamicTicks = T)
 
+    })
+
+    output$mass_summary <- reactable::renderReactable({
+
+      mb() %>%
+        dplyr::group_by(event, Compound) %>%
+        dplyr::summarise(avg = round(mean(value), 2), sd = round(sd(value), 2)) %>% 
+        dplyr::filter(event %in% input$graph_event) %>%
+        custom_reactable(
+          columns = list(
+            event = reactable::colDef(name = 'Event'),
+            Compound = reactable::colDef(name = 'Compound'),
+            avg = reactable::colDef(name = 'Average'),
+            sd = reactable::colDef(name = 'Standard deviation')
+          ), style = "border-radius: '3px'; margin-bottom: 10px"
+        )
     })
 
     ### Boxplot ------------------------------------------------------------------------------------------------
     
-    output$boxplot <- plotly::renderPlotly({
-
-      p <- chem_values() %>%
+    boxplot_data <- shiny::reactive({
+      chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
         dplyr::left_join(bypass() %>% dplyr::mutate(event = event + 1), by = dplyr::join_by('event')) %>%
         dplyr::mutate(dplyr::across(.cols = reactants(), .fns = ~(get(paste0(dplyr::cur_column(), "_bypass")) - .))) %>%
         dplyr::select(time, event, 10:20) %>%
+        tidyr::drop_na(time) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
-        filter(Compound %in% input$graph_compounds & event %in% input$graph_event) %>%
-        ggplot(aes(x = Compound, y = value, fill = Compound)) +
-        geom_boxplot(show.legend = F) +
-        stat_summary(fun = mean, geom = "point", shape = 18, fill = "gray", size = 1.5) +
-        stat_summary(fun = min, geom = "point", shape = 25) +
-        stat_summary(fun = max, geom = "point", shape = 19) +
-        labs(x = '', y = "Molar flow (mol/h)") +
-        facet_wrap(~event, scales = 'free', ncol = 2) +
-        theme_bw() +
-        theme(axis.text.y = element_text(color = 'black', size = 10),
-              axis.title.y = element_text(size = 12),
-              panel.background = element_rect(colour = 'black'),
-              axis.title.x = element_blank(),
-              axis.text.x = element_blank(),
-              axis.ticks.x = element_blank())
+        dplyr::filter(Compound %in% input$graph_compounds & event %in% input$graph_event)
+    })
+
+    output$boxplot <- plotly::renderPlotly({
+
+      p <- boxplot_data() %>%
+            plot(x = Compound,
+                 y = value, 
+                 fill = Compound,
+                 boxp = T,
+                 xlab = "",
+                 ylab = "Molar flow (mol/h)",
+                 facet = 'event',
+                 args = list(facet = list(scales = "free", ncol = 2, labeller = ggplot2::as_labeller(event_names())),
+                             boxp = list(show.legend = F)
+                             ),
+                 custom_color = T
+            ) +
+            ggplot2::stat_summary(fun = mean, geom = "point", shape = 23, fill = "white", size = 2.5) +
+            ggplot2::stat_summary(fun = min, geom = "point", shape = 25, size = 2.5) +
+            ggplot2::stat_summary(fun = max, geom = "point", shape = 19, size = 2.5) +
+            ggplot2::theme(axis.text.y = ggplot2::element_text(color = 'black', size = 10),
+                           axis.title.y = ggplot2::element_text(size = 12),
+                           panel.spacing = ggplot2::unit(0.5, "cm"),
+                           plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
+                           panel.background = ggplot2::element_rect(colour = 'black'),
+                           axis.title.x = element_blank(),
+                           axis.text.x = element_blank(),
+                           axis.ticks.x = element_blank()
+                          )
       
       total_height <- 180 + 180 * length(input$graph_event)/2
       boxp <- plotly::ggplotly(p, height = total_height)

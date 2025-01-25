@@ -25,8 +25,8 @@ chemometric_ui <- function(id) {
                                    ),
                                 shiny::tabPanel(title = "Mass balance",
                                           shiny::fluidRow(
-                                           bs4Dash::column(width = 12,
-                                                 plotly::plotlyOutput(ns('mass_balance'), height = '30%'))
+                                           bs4Dash::column(width = 6, plotly::plotlyOutput(ns('mass_balance'), height = '30%')),
+                                           bs4Dash::column(width = 6, reactable::reactableOutput(ns('mass_summary')))
                                           )
                                    ),         
                                 shiny::tabPanel(title = "Box plot",

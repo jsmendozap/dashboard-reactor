@@ -6,7 +6,7 @@ compounds <- tibble::tribble(
   "Methane",             "CH4",                16.04,          1L,              4L,            0L,    "blue",        
   "Ethane",              "C2H6",               30.07,          2L,              6L,            0L,    "purple",      
   "Ethylene",            "C2H4",               28.05,          2L,              4L,            0L,    "yellow",      
-  "Propane",             "C3H8",               44.097,         3L,              8L,            0L,    "black", 
+  "Propane",             "C3H8",               44.097,         3L,              8L,            0L,    "gray", 
   "Propylene",           "C3H6",               42.081,         3L,              6L,            0L,    "royalblue",   
   "n-butane",            "n-C4H10",            58.012,         4L,              10L,            0L,    "deeppink",    
   "i-butane",            "iso-C4H10",          58.012,         4L,              10,            0L,    "mediumseagreen", 

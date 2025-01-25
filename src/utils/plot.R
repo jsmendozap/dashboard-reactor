@@ -6,6 +6,7 @@ plot <- function(
   lines = F,
   hline = F,
   area = F,
+  boxp = F,
   facet = NULL,
   xlab,
   ylab,
@@ -30,6 +31,9 @@ plot <- function(
       },
       if(hline){
         if ("hline" %in% names(args)) {do.call(ggplot2::geom_hline, args$hline)} else {ggplot2::geom_hline()}
+      },
+      if(boxp){
+        if ("boxp" %in% names(args)) {do.call(ggplot2::geom_boxplot, args$boxp)} else {ggplot2::geom_boxplot()}
       },
       if(!is.null(facet)){ 
         if ("facet" %in% names(args)) {
