@@ -72,7 +72,9 @@ chem_server <- function(id, app_state) {
         dplyr::left_join(app_state$gc(), by = dplyr::join_by('event')) %>%
         dplyr::rowwise() %>%
         dplyr::mutate(dplyr::across(10:ncol(.), ~ qis * (. / get(is)) * (60 / (22.4 * mass() * 1000)))) %>%
-        dplyr::ungroup()
+        dplyr::ungroup() %>%
+        tidyr::drop_na(time)
+
     })
 
     ## Molar flow --------------------------------------------------------------------------------------------------------
@@ -94,7 +96,7 @@ chem_server <- function(id, app_state) {
     output$flow_events <- shiny::renderUI({
 
       selected <- chem_values() %>% dplyr::pull(event) %>% unique() 
-
+      
       shinyWidgets::pickerInput(
         inputId = ns("graph_event"), label = "Select events to plot",
         choices = selected, multiple = TRUE, selected = selected,
@@ -308,14 +310,13 @@ chem_server <- function(id, app_state) {
         dplyr::left_join(bypass() %>% dplyr::mutate(event = event + 1), by = dplyr::join_by('event')) %>%
         dplyr::mutate(dplyr::across(.cols = reactants(), .fns = ~(get(paste0(dplyr::cur_column(), "_bypass")) - .))) %>%
         dplyr::select(time, event, 10:20) %>%
-        tidyr::drop_na(time) %>%
         tidyr::pivot_longer(cols = 3:ncol(.), names_to = 'Compound', values_to = 'value') %>%
         dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
         dplyr::filter(Compound %in% input$graph_compounds & event %in% input$graph_event)
     })
 
     output$boxplot <- plotly::renderPlotly({
-
+      
       p <- boxplot_data() %>%
             plot(x = Compound,
                  y = value, 
