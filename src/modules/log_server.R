@@ -1,19 +1,14 @@
 log_server <- function(id, app_state) {
-  shiny::moduleServer(id, function(input, output, session){
-
+  shiny::moduleServer(id, function(input, output, session) {
     ns <- shiny::NS(id)
 
-    selected1 <- shiny::reactive({ input$var })
-    selected2 <- shiny::reactive({ input$var2 })
+    selected <- shiny::reactive({
+      input$var
+    })
 
     output$dygraph <- dygraphs::renderDygraph({
       shiny::req(app_state$bd)
-      renderdy(app_state$bd(), selected1(), input, 'legend')
-    })
-
-    output$dygraph2 <- dygraphs::renderDygraph({
-      shiny::req(app_state$bd)
-      renderdy(app_state$bd(), selected2(), input, 'legend2')
+      renderdy(app_state$bd(), selected(), 'legend')
     })
 
     output$log <- reactable::renderReactable({
@@ -30,8 +25,11 @@ log_server <- function(id, app_state) {
             date_time = reactable::colDef(name = 'Start time', width = 200),
             name = reactable::colDef(name = 'Event name', minWidth = 100),
             time_duration = reactable::colDef(name = 'Duration', width = 100),
-            obs = reactable::colDef(name = 'Observations', width = 150,
-                                    cell = reactable.extras::text_extra(ns("comment"), class = 'obs'))
+            obs = reactable::colDef(
+              name = 'Observations',
+              width = 150,
+              cell = reactable.extras::text_extra(ns("comment"), class = 'obs')
+            )
           ),
           selection = 'single'
         )
@@ -56,15 +54,19 @@ log_server <- function(id, app_state) {
         dplyr::select(event, n, p_set, sum, pt_310) %>%
         dplyr::filter(event == max(event)) %>%
         dplyr::slice(c(1, n())) %>%
-        {c(event = unique(.$event), dif = .$pt_310[1] - .$pt_310[2])}
+        {
+          c(event = unique(.$event), dif = .$pt_310[1] - .$pt_310[2])
+        }
 
       shiny::renderPrint({
-        if(!is.na(test[1])){
-          stringr::str_glue("Event: {test[1]} \nPressure difference: {round(test[2], 2)}")
+        if (!is.na(test[1])) {
+          stringr::str_glue(
+            "Event: {test[1]} \nPressure difference: {round(test[2], 2)}"
+          )
         } else {
           cat("No Leak test found in data")
         }
-       })
+      })
     })
 
     output$valve <- shiny::renderText({
@@ -95,18 +97,14 @@ log_server <- function(id, app_state) {
     })
 
     return(shiny::reactive({
-      
-        shiny::reactiveValuesToList(obs) %>% 
+      shiny::reactiveValuesToList(obs) %>%
         {
-          if(length(.) > 0) {
+          if (length(.) > 0) {
             utils::stack(.) %>%
-            dplyr::rename(comment = values, event = ind) %>%
-            dplyr::mutate(event = as.double(as.character(event)))
+              dplyr::rename(comment = values, event = ind) %>%
+              dplyr::mutate(event = as.double(as.character(event)))
           }
         }
-      })
-    )
-
-    })
+    }))
+  })
 }
-
