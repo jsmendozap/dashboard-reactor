@@ -29,7 +29,7 @@ server <- function(input, output) {
   df <- shiny::reactive({
     shiny::req(path())
     tryCatch({
-      tools::list_files_with_exts(dir = path(), exts = "xlsx") %>% load_file
+      fs::path(path(), "R.xlsx") %>% load_file
     }, error = \(e) { NULL })
   })
 
@@ -42,14 +42,14 @@ server <- function(input, output) {
   gc <- shiny::reactive({
     shiny::req(path())
     tryCatch({
-      tools::list_files_with_exts(dir = path(), exts = "txt") %>% load_gc(bd = bd())
+      fs::path(path(), "GC.txt") %>% load_gc(bd = bd())
     }, error = \(e) { NULL })
   })
 
   ms <- shiny::reactive({
     shiny::req(path())
     tryCatch({
-      tools::list_files_with_exts(dir = path(), exts = "dat") %>% load_ms(bd = bd())
+      fs::path(path(), "MS.dat") %>% load_ms(bd = bd())
     }, error = \(e) { NULL })
   })
   
