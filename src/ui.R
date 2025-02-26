@@ -1,3 +1,10 @@
+bs4DashTheme <- fresh::bs4Dash_theme(
+  info = "#484e68",
+  "main-bg" = "#ffffff",
+  "sidebar-light-bg" = "#fdf0f0",
+  "sidebar-light-header_color" = "black"
+)
+
 menu <- list(
   shiny::br(),
   shinyFiles::shinyDirButton(
@@ -60,16 +67,17 @@ menu <- list(
 ui <- bs4Dash::dashboardPage(
   title = 'Experiment control',
   bs4Dash::dashboardHeader(
+    fixed = T,
     title = bs4Dash::dashboardBrand(
       image = "https://www.dusselier-lab.org/uploads/media/cache/default/uploads/c1e65122e588fa60c0dabe8f2168cc4e.jpeg",
       title = shiny::span(
         "Experiment control",
-        style = "font-weight: bold; color: #6c757d"
+        style = "font-weight: bold; color: #ffffff"
       )
     ),
     shiny::div(
       shiny::textOutput('dir_header'),
-      style = 'color: #6c757d; font-weight: bold'
+      style = 'color: #ffffff; font-weight: bold'
     )
   ),
   bs4Dash::dashboardSidebar(
@@ -77,7 +85,7 @@ ui <- bs4Dash::dashboardPage(
     minified = F,
     bs4Dash::sidebarMenu(menu),
     status = "info",
-    elevation = 2
+    elevation = 1
   ),
   bs4Dash::dashboardBody(
     bs4Dash::tabItems(
@@ -87,6 +95,7 @@ ui <- bs4Dash::dashboardPage(
       raw_data_ui('raw'),
       chemometric_ui('chem')
     ),
+    fresh::use_theme(bs4DashTheme),
     tags$head(shiny::includeCSS("www/custom.css")),
     reactable.extras::reactable_extras_dependency()
   )

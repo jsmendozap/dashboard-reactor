@@ -23,6 +23,7 @@ pacman::p_load(
   shinyFiles,
   duckdb,
   DBI,
+  fresh,
   shinyjs
 )
 

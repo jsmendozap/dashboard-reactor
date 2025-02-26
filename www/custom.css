@@ -39,3 +39,33 @@
   background-color: #575656d0 !important; 
   font-size: 12px !important; 
 }
+
+.card {
+  background-color: #ffffff;
+  border: 1px solid rgb(187, 183, 183);
+  border-radius: 8px;
+  box-shadow: 4px 5px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  transition: all 0.3s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.navbar {
+  background-color: #484E68;
+}
+
+.brand-link {
+  background-color: #484E68 !important;
+}
+
+.fa-bars {
+  color: white;
+}
+
+.small-box {
+  border: 1px solid gray;
+}

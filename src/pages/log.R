@@ -15,23 +15,26 @@ log_ui <- function(id) {
     tabName = 'log',
     shiny::fluidRow(
       bs4Dash::column(
-        width = 9,
+        width = 8,
+        style = "padding-right: 0px",
         bs4Dash::box(
           title = "Events summary",
           status = 'info',
           solidHeader = T,
           width = 12,
-          reactable::reactableOutput(ns('log'))
+          reactable::reactableOutput(ns('log')),
+          style = 'padding: 10px'
         )
       ),
       bs4Dash::column(
-        width = 3,
+        width = 4,
         bs4Dash::box(
           title = "Leak test",
           width = 12,
           status = 'info',
           solidHeader = T,
-          shiny::uiOutput(ns('leak'))
+          shiny::uiOutput(ns('leak')),
+          style = "padding: 10px"
         ),
         bs4Dash::box(
           title = "Reactor's inflow",
@@ -44,14 +47,17 @@ log_ui <- function(id) {
             bs4Dash::column(
               width = 6,
               bs4Dash::valueBoxOutput(ns("fi_110"), width = 12),
-              bs4Dash::valueBoxOutput(ns("fi_120"), width = 12)
+              bs4Dash::valueBoxOutput(ns("fi_120"), width = 12),
+              style = 'padding: 0px'
             ),
             bs4Dash::column(
               width = 6,
               bs4Dash::valueBoxOutput(ns("fi_130"), width = 12),
-              bs4Dash::valueBoxOutput(ns("fi_140"), width = 12)
+              bs4Dash::valueBoxOutput(ns("fi_140"), width = 12),
+              style = 'padding: 0px'
             )
-          )
+          ),
+          style = 'padding-right: 8px'
         )
       )
     ),
@@ -71,7 +77,10 @@ log_ui <- function(id) {
             width = "100%",
             options = list(limit = 2)
           ),
-          shiny::div(id = 'legend', style = "margin-left: 5px")
+          shiny::div(
+            id = 'legend',
+            style = "margin-left: 5px; margin-bottom: 20px"
+          )
         ),
         bs4Dash::column(
           width = 8,
