@@ -15,11 +15,22 @@ reaction_server <- function(id) {
 
     setting <- shiny::reactive({
       req(input$reactions_db)
-      openxlsx::readWorkbook(
+
+      res <- openxlsx::readWorkbook(
         fs::path(
           "~/Reactor Dashboard/Reactions",
           paste0(input$reactions_db, ".", "xlsx")
         )
+      )
+
+      list(
+        desc = res[1, 3],
+        data = res %>%
+          dplyr::filter(dplyr::row_number() > 7) %>%
+          dplyr::select(2:16) %>%
+          setNames(res[7, 2:16]) %>%
+          dplyr::rename("Compound" = 1) %>%
+          tidyr::drop_na(Compound)
       )
     })
 
@@ -27,19 +38,14 @@ reaction_server <- function(id) {
       shiny::tagList(
         shiny::strong("Description"),
         shiny::br(),
-        shiny::p(setting()[1, 3])
+        shiny::p(setting()[[1]])
       )
     })
 
     output$setting <- reactable::renderReactable({
       req(input$reactions_db)
 
-      setting() %>%
-        dplyr::filter(dplyr::row_number() > 7) %>%
-        dplyr::select(2, 8:15) %>%
-        setNames(setting()[7, c(2, 8:15)]) %>%
-        dplyr::rename("Compound" = 1) %>%
-        tidyr::drop_na(Compound) %>%
+      setting()[[2]][, c(1, 8:14)] %>%
         custom_reactable(
           columns = list(
             Compound = reactable::colDef(sticky = "left", width = 150)
@@ -48,7 +54,8 @@ reaction_server <- function(id) {
     })
 
     return(shiny::reactive({
-      input$reactions_db
+      setting()[[2]] %>%
+        janitor::clean_names()
     }))
   })
 }
