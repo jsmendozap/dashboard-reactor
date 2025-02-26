@@ -1,10 +1,12 @@
-query <- function(operation, name = NULL, value = NULL){
-  con <- duckdb::dbConnect(drv = duckdb::duckdb(),
-                        dbdir = "~/reactor.duckdb",
-                        read_only = FALSE
-                      )
+query <- function(operation, name = NULL, value = NULL) {
+  con <- duckdb::dbConnect(
+    drv = duckdb::duckdb(),
+    dbdir = "~/reactor.duckdb",
+    read_only = FALSE
+  )
 
-  res <- switch (operation,
+  res <- switch(
+    operation,
     insert = duckdb::dbAppendTable(con, name, value),
     list = {
       statement <- stringr::str_glue('SELECT "{value}" FROM {name}')
@@ -12,21 +14,23 @@ query <- function(operation, name = NULL, value = NULL){
     },
     exist = duckdb::dbExistsTable(con, name),
     head = {
-      statement <- stringr::str_glue('SELECT * FROM {name} WHERE ("reaction" = \'{value}\')')
-      DBI::dbGetQuery(con, statement) 
+      statement <- stringr::str_glue(
+        'SELECT * FROM {name} WHERE ("reaction" = \'{value}\')'
+      )
+      DBI::dbGetQuery(con, statement)
     },
     delete = {
-      purrr::map2(.x = name, .y = c("reaction", "name"),
-                 .f = \(.x, .y) {
-                   statement <- stringr::str_glue("DELETE FROM {.x} WHERE {.y} = '{value}'")
-                   DBI::dbExecute(con, statement)
-                  } 
-                )
+      purrr::map2(.x = name, .y = c("reaction", "name"), .f = \(.x, .y) {
+        statement <- stringr::str_glue(
+          "DELETE FROM {.x} WHERE {.y} = '{value}'"
+        )
+        DBI::dbExecute(con, statement)
+      })
     },
     tables = duckdb::dbListTables(con) %>% print()
   )
-  
+
   duckdb::dbDisconnect(conn = con)
-  
+
   return(res)
 }
