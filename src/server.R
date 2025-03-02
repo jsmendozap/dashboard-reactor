@@ -81,6 +81,7 @@ server <- function(input, output) {
   ## Pages -----------------------------------------------------------------------
 
   setting <- reaction_server('reaction')
+  catalyst_char <- catalyst_server('catalyst')
   comment <- log_server('log', app_state)
   chemometric <- chem_server('chem', app_state)
   quality_server('quality', app_state)
@@ -92,6 +93,11 @@ server <- function(input, output) {
     app_state$conversion <- chemometric$conversion
     app_state$mass_balance <- chemometric$mass_balance
     app_state$boxplot <- chemometric$boxplot
+    app_state$material <- catalyst_char$material
+    app_state$preparation <- catalyst_char$preparation
+    app_state$cc <- catalyst_char$cc
+    app_state$fcc <- catalyst_char$fcc
+    app_state$scc <- catalyst_char$scc
   })
 
   ### Report -------------------------------------------------------------------
@@ -124,6 +130,11 @@ server <- function(input, output) {
             error = \(e) NULL
           ),
           path = path(),
+          material = app_state$material(),
+          preparation = app_state$preparation(),
+          cc = app_state$cc(),
+          fcc = app_state$fcc(),
+          scc = app_state$scc(),
           chem_values = app_state$chem_values(),
           molar_flow = app_state$molar_flow(),
           conversion = app_state$conversion(),

@@ -24,7 +24,8 @@ pacman::p_load(
   duckdb,
   DBI,
   fresh,
-  shinyjs
+  shinyjs,
+  excelR
 )
 
 if (.Platform$OS.type == "windows") {

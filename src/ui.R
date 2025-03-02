@@ -36,6 +36,11 @@ menu <- list(
     icon = shiny::icon("flask-vial", style = "margin-right: 5px")
   ),
   bs4Dash::menuItem(
+    "Catalyst",
+    tabName = "catalyst",
+    icon = shiny::icon("atom", style = "margin-right: 5px")
+  ),
+  bs4Dash::menuItem(
     "Log summary",
     tabName = "log",
     icon = shiny::icon("book", style = "margin-right: 5px")
@@ -48,7 +53,7 @@ menu <- list(
   bs4Dash::menuItem(
     "Raw data",
     tabName = "raw-data",
-    icon = shiny::icon("file-lines", style = "margin-right: 5px")
+    icon = shiny::icon("square-poll-vertical", style = "margin-right: 5px")
   ),
   bs4Dash::menuItem(
     "Chemometric",
@@ -90,6 +95,7 @@ ui <- bs4Dash::dashboardPage(
   bs4Dash::dashboardBody(
     bs4Dash::tabItems(
       reaction_ui('reaction'),
+      catalyst_ui('catalyst'),
       log_ui('log'),
       quality_ui('quality'),
       raw_data_ui('raw'),
