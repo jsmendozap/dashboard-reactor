@@ -1,0 +1,34 @@
+name: Release Win Launcher
+
+on:
+  push:
+    paths:
+      - "win-launcher/**"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build release
+        working-directory: ./win-launcher
+        run: |
+          cargo build --release
+          mkdir -p dist
+          cp target/release/dashboard-reactor.exe dist/
+
+      - name: Upload release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./win-launcher/dist/dashboard-reactor.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
