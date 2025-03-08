@@ -1,0 +1,22 @@
+[package]
+name = "Dashboard Reactor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4.40"
+eframe = "0.31.1"
+image = "0.25.5"
+rfd = "0.15.2"
+winreg = "0.55.0"
+
+[profile.release]
+lto = true          
+codegen-units = 1   
+strip = true
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winbase"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1.12"
