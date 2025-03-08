@@ -34,7 +34,8 @@ jobs:
         id: get_version
         working-directory: ./win-launcher
         run: |
-          echo "version=$(cargo pkgid | cut -d'#' -f2)" >> $GITHUB_OUTPUT
+          version=$(grep -m 1 '^version =' Cargo.toml | cut -d '"' -f 2)
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Create tag
         uses: mathieudutour/github-tag-action@v6.2
