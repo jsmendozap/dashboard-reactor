@@ -30,7 +30,8 @@ pacman::p_load(
 
 if (.Platform$OS.type == "windows") {
   args <- commandArgs(trailingOnly = TRUE)
-  Sys.setenv(QUARTO_PATH = args[1])
+  ruta_quarto <- gsub("\\\\", "/", args[1])
+  Sys.setenv(QUARTO_PATH = ruta_quarto)
 }
 
 cat("Running application\n")
