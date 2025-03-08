@@ -30,11 +30,15 @@ jobs:
           mkdir -p dist
           cp target/release/dashboard-reactor.exe dist/
 
+      - name: Install jq
+        run: choco install jq -y
+
       - name: Get version
         id: get_version
         working-directory: ./win-launcher
+        shell: bash
         run: |
-          version=$(grep -m 1 '^version =' Cargo.toml | cut -d '"' -f 2)
+          version=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[0].version')
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Create tag
