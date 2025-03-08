@@ -26,9 +26,22 @@ jobs:
           mkdir -p dist
           cp target/release/dashboard-reactor.exe dist/
 
+      - name: Get version
+        id: get_version
+        working-directory: ./win-launcher
+        run: |
+          echo "version=$(cargo pkgid | cut -d'#' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        uses: mathieudutour/github-tag-action@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: v${{ steps.get_version.outputs.version }}
+
       - name: Upload release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./win-launcher/dist/dashboard-reactor.exe
+          tag_name: v${{ steps.get_version.outputs.version }}
+          files: ./win-launcher/dist/win-launcher.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
