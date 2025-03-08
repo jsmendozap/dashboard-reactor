@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "win-launcher/**"
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
