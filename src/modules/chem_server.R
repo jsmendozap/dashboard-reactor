@@ -76,8 +76,8 @@ chem_server <- function(id, app_state) {
 
         app_state$bd() %>%
           dplyr::filter(event == values) %>%
-          dplyr::pull({{ which }}) %>%
-          unique
+          dplyr::slice_head(n = 1, by = event) %>%
+          dplyr::pull({{ which }})
       }
 
       data.frame(
@@ -92,7 +92,7 @@ chem_server <- function(id, app_state) {
             tidyr::drop_na(internal_standar) %>%
             dplyr::pull(compound) %>%
             tolower(),
-          qis = sel_events(fic_140) %>% rep(each = 2)
+          qis = sel_events(fic_140)
         ) %>%
         dplyr::left_join(app_state$gc(), by = dplyr::join_by('event')) %>%
         dplyr::rowwise() %>%
