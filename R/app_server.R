@@ -131,16 +131,16 @@ app_server <- function(input, output, session) {
       quarto_render(
         input = tempReport,
         execute_params = list(
-          bd = if (is.null(app_state$comment)) {
+          bd = if (is.null(comment())) {
             bd() %>% mutate(comment = "")
           } else {
-            bd() %>% left_join(app_state$comment)
+            bd() %>% left_join(isolate(comment()))
           },
-          df = app_state$df,
-          gc = app_state$gc,
+          df = df(),
+          gc = gc(),
           ms = tryCatch(
             {
-              app_state$ms %>%
+              app_state$ms() %>%
                 mutate(
                   time_absolute_date_time = as.character(
                     time_absolute_date_time
@@ -149,21 +149,21 @@ app_server <- function(input, output, session) {
             },
             error = function(e) NULL
           ),
-          path = app_state$path,
-          material = app_state$material,
-          preparation = app_state$preparation,
-          cc = app_state$cc,
-          fcc = app_state$fcc,
-          scc = app_state$scc,
-          chem_values = app_state$chem_values,
-          molar_flow = app_state$molar_flow,
-          conversion = app_state$conversion,
-          mass_balance = app_state$mass_balance,
-          boxplot = app_state$boxplot
+          path = app_state$path(),
+          material = app_state$material(),
+          preparation = app_state$preparation(),
+          cc = app_state$cc(),
+          fcc = app_state$fcc(),
+          scc = app_state$scc(),
+          chem_values = app_state$chem_values(),
+          molar_flow = app_state$molar_flow(),
+          conversion = app_state$conversion(),
+          mass_balance = app_state$mass_balance(),
+          boxplot = app_state$boxplot()
         )
       )
 
-      filename <- path() %>%
+      filename <- path_files() %>%
         as.character %>%
         strsplit('/') %>%
         unlist %>%
@@ -171,7 +171,7 @@ app_server <- function(input, output, session) {
 
       file.copy(
         from = file.path(tempdir(), 'report.html'),
-        to = file.path(path(), paste0(filename, '.html'))
+        to = file.path(path_files(), paste0(filename, '.html'))
       )
     }
   )

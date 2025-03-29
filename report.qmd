@@ -222,6 +222,7 @@ if (!is.na(test[1])) {
 
 :::{.callout-note}
 **Material description:** `{r} params$material`
+
 **Material preparation:** `{r} params$preparation`
 :::
 
@@ -231,27 +232,42 @@ if (!is.na(test[1])) {
 #### Details
 
 ```{r}
-params$cc %>%
-  as_tibble() %>%
-  custom_reactable()
+tryCatch(
+  expr = {
+    params$cc %>%
+      as_tibble() %>%
+      custom_reactable()
+  },
+  error = \(e) cat("Not information provided")
+)
 ```
 
 #### Fresh
 
 ```{r}
-params$fcc %>%
-  as_tibble() %>%
-  filter(Value != "") %>%
-  custom_reactable()
+tryCatch(
+  expr = {
+    params$fcc %>%
+      as_tibble() %>%
+      filter(Value != "") %>%
+      custom_reactable()
+  },
+  error = \(e) cat('Not information provided')
+)
 ```
 
 #### Spent
 
 ```{r}
-params$scc %>%
-  as_tibble() %>%
-  filter(Value != "") %>%
-  custom_reactable()
+tryCatch(
+  expr = {
+    params$scc %>%
+      as_tibble() %>%
+      filter(Value != "") %>%
+      custom_reactable()
+  },
+  error = \(e) cat('Not information provided')
+)
 ```
 
 :::

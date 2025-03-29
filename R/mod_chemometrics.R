@@ -162,7 +162,6 @@ mod_chemometrics_server <- function(id, app_state) {
     })
 
     chem_values <- shiny::eventReactive(input$btn_flow, {
-      print(tech)
       sel_events <- function(which) {
         values <- shiny::reactiveValuesToList(tech) %>%
           unlist %>%
