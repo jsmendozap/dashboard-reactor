@@ -1,0 +1,38 @@
+Package: dashboardReactor
+Title: Reactor Experiment Dashboard
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Juan",
+           family = "Mendoza",
+           role = c("aut", "cre"),
+           email = "jsmendozap@gmail.com")
+Description: Dashboard to jointly analyze data from GC, MS and Reactor.
+License: MIT
+Encoding: UTF-8
+Imports: 
+    shiny,
+    bs4Dash,
+    tidyverse,
+    openxlsx,
+    shinyFiles,
+    plotly,
+    reactable,
+    duckdb,
+    shinyjs,
+    excelR,
+    fresh,
+    dygraphs,
+    zoo,
+    janitor,
+    lubridate,
+    shinyWidgets,
+    tools,
+    fs,
+    prettyunits,
+    reactable.extras,
+    attempt,
+    DT,
+    glue,
+    golem,
+    htmltools
+RoxygenNote: 7.3.1

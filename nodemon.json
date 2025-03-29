@@ -1,7 +1,0 @@
-{
-  "signal": "SIGHUP",
-  "verbose": true,
-  "execMap": {
-    "R": "Rscript"
-  }
-}
