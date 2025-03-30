@@ -49,11 +49,12 @@ mod_reaction_ui <- function(id) {
 #' @importFrom reactable reactable renderReactable colDef getReactableState
 #' @importFrom janitor clean_names
 #' @importFrom dplyr filter select rename row_number left_join rename_with across
-#' @importFrom tidyr drop_na fill
+#' @importFrom tidyr drop_na fill unnest
 #' @importFrom purrr map_df
 #' @importFrom tools file_path_sans_ext
 #' @importFrom openxlsx readWorkbook
 #' @importFrom tibble tibble
+#' @importFrom scales hue_pal
 #' @noRd
 
 compounds <- c(
@@ -75,6 +76,8 @@ compounds <- c(
 ) %>%
   data.frame(Compound = names(.), color = ., row.names = NULL)
 
+random_color <- \() hue_pal()(1)
+
 mod_reaction_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -87,7 +90,7 @@ mod_reaction_server <- function(id) {
         pattern = "\\.xlsx$"
       )
 
-      lapply(files, function(file) {
+      map_df(files, function(file) {
         res <- readWorkbook(file)
 
         details <- res %>%
@@ -101,18 +104,19 @@ mod_reaction_server <- function(id) {
           ) %>%
           mutate(across(.cols = 4:6, .fn = ~ as.numeric(.x))) %>%
           drop_na(Compound) %>%
-          left_join(compounds)
+          left_join(compounds) %>%
+          mutate(color = ifelse(is.na(color), random_color(), color))
 
-        list(
+        tibble(
           name = file_path_sans_ext(basename(file)),
           description = res[1, 3],
-          details = details
+          details = list(details)
         )
       })
     })
 
     # Function to create a details table for nested rows
-    create_details_table <- function(data) {
+    details_table <- function(data) {
       reactable(
         data[, c(1, 7:14, 16)],
         bordered = TRUE,
@@ -126,7 +130,8 @@ mod_reaction_server <- function(id) {
                 value = value,
                 id = paste0("color_picker_", index),
                 onchange = sprintf(
-                  "Shiny.setInputValue('color_changed', {index: %d, color: this.value})",
+                  "Shiny.setInputValue('%s', {index: %d, color: this.value}, {priority: 'event'})",
+                  ns("color_changed"),
                   index
                 )
               )
@@ -140,22 +145,17 @@ mod_reaction_server <- function(id) {
     output$setting <- renderReactable({
       req(reaction_data())
 
-      main_data <- map_df(
-        reaction_data(),
-        ~ tibble(
-          name = .x$name,
-          description = .x$description
-        )
-      )
-
       reactable(
-        main_data,
+        reaction_data()[, 1:2],
         columns = list(
           name = colDef(name = "Reaction name"),
           description = colDef(name = "Reaction description")
         ),
         details = function(index) {
-          create_details_table(reaction_data()[[index]]$details)
+          details_table(unnest(
+            reaction_data()[index, 3],
+            cols = "details"
+          ))
         },
         rowStyle = list(cursor = "pointer"),
         searchable = TRUE,
@@ -169,8 +169,27 @@ mod_reaction_server <- function(id) {
     observeEvent(getReactableState("setting", "selected"), {
       sel <- getReactableState("setting", "selected")
       req(sel)
-      selected_reaction(reaction_data()[[sel]]$details %>% clean_names())
+      selected_reaction(
+        reaction_data()[sel, "details"] %>%
+          unnest(cols = "details") %>%
+          clean_names()
+      )
     })
+
+    observeEvent(
+      input$color_changed,
+      {
+        req(selected_reaction())
+
+        updated_details <- selected_reaction()
+        updated_details[
+          input$color_changed$index,
+          "color"
+        ] <- input$color_changed$color
+
+        selected_reaction(updated_details)
+      }
+    )
 
     return(selected_reaction)
   })
