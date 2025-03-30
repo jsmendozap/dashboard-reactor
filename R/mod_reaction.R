@@ -48,13 +48,32 @@ mod_reaction_ui <- function(id) {
 #' @importFrom shiny moduleServer reactive req observeEvent
 #' @importFrom reactable reactable renderReactable colDef getReactableState
 #' @importFrom janitor clean_names
-#' @importFrom dplyr filter select rename row_number
-#' @importFrom tidyr drop_na
+#' @importFrom dplyr filter select rename row_number left_join rename_with across
+#' @importFrom tidyr drop_na fill
 #' @importFrom purrr map_df
 #' @importFrom tools file_path_sans_ext
 #' @importFrom openxlsx readWorkbook
 #' @importFrom tibble tibble
 #' @noRd
+
+compounds <- c(
+  Hydrogen = "#FFA500",
+  "Carbon monoxide" = "#90EE90",
+  "Carbon dioxide" = "#FF0000",
+  Methane = "#0000FF",
+  Ethane = "#800080",
+  Ethylene = "#FFFF00",
+  Propane = "#808080",
+  Propylene = "#4169E1",
+  "n-butane" = "#FF1493",
+  "i-butane" = "#3CB371",
+  "Cis-2-butene" = "#9400D3",
+  "t-2-butene" = "#7FFF00",
+  Nitrogen = "#1E90FF",
+  Argon = "#40E0D0",
+  Water = "#808000"
+) %>%
+  data.frame(Compound = names(.), color = ., row.names = NULL)
 
 mod_reaction_server <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -76,7 +95,13 @@ mod_reaction_server <- function(id) {
           select(2:16) %>%
           setNames(res[7, 2:16]) %>%
           rename("Compound" = 1) %>%
-          drop_na(Compound)
+          rename_with(
+            .cols = 4:6,
+            .fn = ~ sapply(strsplit(.x, " "), `[`, 1)
+          ) %>%
+          mutate(across(.cols = 4:6, .fn = ~ as.numeric(.x))) %>%
+          drop_na(Compound) %>%
+          left_join(compounds)
 
         list(
           name = file_path_sans_ext(basename(file)),
@@ -89,9 +114,25 @@ mod_reaction_server <- function(id) {
     # Function to create a details table for nested rows
     create_details_table <- function(data) {
       reactable(
-        data[, c(1, 7:14)],
+        data[, c(1, 7:14, 16)],
         bordered = TRUE,
-        highlight = TRUE
+        highlight = TRUE,
+        columns = list(
+          color = colDef(
+            name = "Color",
+            cell = function(value, index) {
+              tags$input(
+                type = "color",
+                value = value,
+                id = paste0("color_picker_", index),
+                onchange = sprintf(
+                  "Shiny.setInputValue('color_changed', {index: %d, color: this.value})",
+                  index
+                )
+              )
+            }
+          )
+        )
       )
     }
 
@@ -128,7 +169,6 @@ mod_reaction_server <- function(id) {
     observeEvent(getReactableState("setting", "selected"), {
       sel <- getReactableState("setting", "selected")
       req(sel)
-
       selected_reaction(reaction_data()[[sel]]$details %>% clean_names())
     })
 

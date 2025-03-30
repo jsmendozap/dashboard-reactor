@@ -30,7 +30,7 @@
 #' @noRd
 
 app_server <- function(input, output, session) {
-  app_state <- reactiveValues()
+  app_state <<- reactiveValues()
 
   observe({
     app_state$df <- df

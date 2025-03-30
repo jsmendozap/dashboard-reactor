@@ -408,20 +408,24 @@ mod_chemometrics_server <- function(id, app_state) {
     ### Mass balance -------------------------------------------------------------------------------------------
 
     mb <- shiny::reactive({
-      c_in <- compounds %>%
-        dplyr::mutate(name = change_str(name, " ", "_", T)) %>%
-        dplyr::filter(name %in% names(chem_values()))
+      req(app_state$setting())
+
+      c_in <- app_state$setting() %>%
+        dplyr::mutate(compound = change_str(compound, " ", "_", T)) %>%
+        dplyr::filter(compound %in% names(chem_values()))
 
       mass_plot <- chem_values() %>%
         dplyr::filter(technique == 'TOS') %>%
-        dplyr::select(event, time, dplyr::any_of(c_in$name))
+        dplyr::select(event, time, dplyr::any_of(c_in$compound))
 
       b_in <- bypass() %>%
-        dplyr::relocate(event, technique, dplyr::contains(c_in$name)) %>%
+        dplyr::relocate(event, technique, dplyr::contains(c_in$compound)) %>%
         {
           as.matrix(x = .[, 3:ncol(.)])
         } %*%
-        as.matrix(dplyr::filter(c_in, name %in% reactants()) %>% .[, 4:6]) %>%
+        as.matrix(
+          dplyr::filter(c_in, compound %in% reactants()) %>% .[, 4:6]
+        ) %>%
         dplyr::as_tibble() %>%
         dplyr::mutate(event = bypass()$event + 1)
 
