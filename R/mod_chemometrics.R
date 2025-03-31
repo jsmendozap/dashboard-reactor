@@ -23,7 +23,8 @@
 #'   across any_of contains relocate summarise glimpse
 #' @importFrom tidyr drop_na pivot_longer
 #' @importFrom ggplot2 theme element_text element_rect unit as_labeller stat_summary element_blank
-#'
+#' @importFrom reactable.extras dropdown_extra
+#' 
 #' @return A list of reactive outputs, including chemometric values, molar flows,
 #'   conversions, mass balances, and box plot data.
 #'
@@ -130,7 +131,7 @@ mod_chemometrics_server <- function(id, app_state) {
             technique = colDef(
               name = 'Technique/Reaction',
               minWidth = 150,
-              cell = reactable.extras::dropdown_extra(
+              cell = dropdown_extra(
                 id = ns('dropdown'),
                 choices = tecq,
                 class = 'dropdown-extra'

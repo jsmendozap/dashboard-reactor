@@ -143,7 +143,6 @@ ChemCalculations <- R6Class(
     },
 
     molar_flows = function(comps, events) {
-      library(magrittr)
       print(list(comps, events))
       self$chem_values %>%
         select(event, time, 10:last_col()) %>%
@@ -154,8 +153,7 @@ ChemCalculations <- R6Class(
         ) %>%
         filter(!Compound %in% c('argon', 'nitrogen')) %>%
         mutate(Compound = private$change_str(Compound, "_", " ")) %>%
-        filter(Compound %in% comps & event %in% events) %T>%
-        glimpse()
+        filter(Compound %in% comps & event %in% events)
     },
 
     conversion = function() {

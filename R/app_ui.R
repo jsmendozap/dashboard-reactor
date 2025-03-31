@@ -24,6 +24,7 @@ app_ui <- function(request) {
 #'
 #' @import shiny
 #' @importFrom golem add_resource_path activate_js favicon bundle_resources
+#' @importFrom reactable.extras reactable_extras_dependency
 #' @noRd
 
 golem_add_external_resources <- function() {
@@ -33,7 +34,7 @@ golem_add_external_resources <- function() {
     golem::activate_js(),
     golem::favicon(),
     tags$link(rel = "stylesheet", type = "text/css", href = "www/custom.css"),
-    reactable.extras::reactable_extras_dependency()
+    reactable_extras_dependency()
   )
 }
 

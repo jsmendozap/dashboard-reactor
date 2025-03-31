@@ -91,7 +91,7 @@ plot <- function(
       },
       if (!is.null(facet)) {
         if ("facet" %in% names(args)) {
-          exec(.f = facet_wrap, ~ .data[[facet]], !!!args$facet)
+          exec(.fn = facet_wrap, ~ .data[[facet]], !!!args$facet)
         } else {
           facet_wrap(~ .data[[facet]])
         }

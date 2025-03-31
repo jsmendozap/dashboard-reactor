@@ -135,7 +135,11 @@ custom_plot <- function(
       },
       if (!is.null(facet)) {
         if ("facet" %in% names(args)) {
-          purrr::exec(.f = ggplot2::facet_wrap, ~ .data[[facet]], !!!args$facet)
+          purrr::exec(
+            .fn = ggplot2::facet_wrap,
+            ~ .data[[facet]],
+            !!!args$facet
+          )
         } else {
           ggplot2::facet_wrap(~ .data[[facet]])
         }
