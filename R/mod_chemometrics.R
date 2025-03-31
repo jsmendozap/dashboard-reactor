@@ -1,86 +1,91 @@
-#' chemometrics UI Function
+#' Chemometrics Module
 #'
-#' @description A shiny Module.
+#' @description This module provides a Shiny interface for chemometric calculations,
+#' including molar flows, conversions, mass balances, and box plots. It integrates
+#' with the `ChemCalculations` R6 class to perform backend computations.
+#'
+#' @details The module consists of a UI function (`mod_chemometrics_ui`) and a server
+#' function (`mod_chemometrics_server`). The UI includes interactive elements for
+#' selecting compounds and events, and displays results in tables and plots. The server
+#' handles user inputs, performs calculations, and renders outputs dynamically.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
+#' @param app_state A reactive object containing the application state, including
+#'   data and settings required for chemometric calculations.
+#'
+#' @importFrom shiny NS tagList fluidRow br moduleServer reactiveValues reactiveValuesToList
+#'   observeEvent reactive req renderUI
+#' @importFrom bs4Dash tabItem column tabBox actionButton
+#' @importFrom reactable reactableOutput renderReactable colDef
+#' @importFrom shinyWidgets pickerInput
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly
+#' @importFrom dplyr slice_head filter mutate pull select distinct left_join rowwise ungroup
+#'   across any_of contains relocate summarise glimpse
+#' @importFrom tidyr drop_na pivot_longer
+#' @importFrom ggplot2 theme element_text element_rect unit as_labeller stat_summary element_blank
+#'
+#' @return A list of reactive outputs, including chemometric values, molar flows,
+#'   conversions, mass balances, and box plot data.
 #'
 #' @noRd
-#'
-#' @importFrom shiny NS tagList
 
+# UI Function
 mod_chemometrics_ui <- function(id) {
   ns <- NS(id)
 
-  bs4Dash::tabItem(
+  tabItem(
     tabName = "chemometric",
-    shiny::fluidRow(reactable::reactableOutput(
-      ns('std'),
-      width = '100%'
-    )),
-    shiny::br(),
-    shiny::fluidRow(
-      bs4Dash::column(
+    fluidRow(reactableOutput(ns('std'), width = '100%')),
+    br(),
+    fluidRow(
+      column(
         width = 3,
-        shiny::uiOutput(ns('flow_compounds')),
-        shiny::uiOutput(ns('flow_events')),
-        bs4Dash::actionButton(
+        uiOutput(ns('flow_compounds')),
+        uiOutput(ns('flow_events')),
+        actionButton(
           ns('btn_flow'),
           label = 'Calculate flows'
         )
       ),
-      bs4Dash::tabBox(
+      tabBox(
         width = 9,
-        shiny::tabPanel(
+        tabPanel(
           title = "Molar rate",
-          shiny::fluidRow(
-            bs4Dash::column(
+          fluidRow(
+            column(
               width = 12,
-              plotly::plotlyOutput(
-                ns('molar_flow'),
-                height = '50%'
-              )
+              plotlyOutput(ns('molar_flow'), height = '50%')
             )
           )
         ),
-        shiny::tabPanel(
+        tabPanel(
           title = "Conversion",
-          shiny::fluidRow(
-            bs4Dash::column(
+          fluidRow(
+            column(
               width = 12,
-              plotly::plotlyOutput(
-                ns('conversion'),
-                height = '30%'
-              )
+              plotlyOutput(ns('conversion'), height = '30%')
             )
           )
         ),
-        shiny::tabPanel(
+        tabPanel(
           title = "Mass balance",
-          shiny::fluidRow(
-            bs4Dash::column(
+          fluidRow(
+            column(
               width = 6,
-              plotly::plotlyOutput(
-                ns('mass_balance'),
-                height = '30%'
-              )
+              plotlyOutput(ns('mass_balance'), height = '30%')
             ),
-            bs4Dash::column(
+            column(
               width = 6,
-              reactable::reactableOutput(ns(
-                'mass_summary'
-              ))
+              reactableOutput(ns('mass_summary'))
             )
           )
         ),
-        shiny::tabPanel(
+        tabPanel(
           title = "Box plot",
-          shiny::fluidRow(
-            bs4Dash::column(
+          fluidRow(
+            column(
               width = 12,
-              plotly::plotlyOutput(
-                ns('boxplot'),
-                height = '30%'
-              )
+              plotlyOutput(ns('boxplot'), height = '30%')
             )
           )
         )
@@ -89,41 +94,40 @@ mod_chemometrics_ui <- function(id) {
   )
 }
 
-#' chemometrics Server Functions
-#'
-#' @noRd
+#' Server function
 
 mod_chemometrics_server <- function(id, app_state) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    output$std <- reactable::renderReactable({
-      shiny::req(app_state$bd())
+    # Render the standard table
+    output$std <- renderReactable({
+      req(app_state$bd())
 
       tecq <- c('', 'Regeneration', 'By Pass', 'TOS')
 
       app_state$bd() %>%
-        dplyr::slice_head(n = 1, by = event) %>%
-        plotly::select(event, name, qis = fic_140) %>%
-        dplyr::mutate(
+        slice_head(n = 1, by = event) %>%
+        select(event, name, qis = fic_140) %>%
+        mutate(
           is = app_state$setting() %>%
-            tidyr::drop_na(internal_standar) %>%
-            dplyr::pull(compound),
-          technique = list(tecq),
+            drop_na(internal_standar) %>%
+            pull(compound),
+          technique = list(tecq)
         ) %>%
         custom_reactable(
           columns = list(
-            event = reactable::colDef(name = 'Event'),
-            name = reactable::colDef(name = 'Event name', minWidth = 300),
-            is = reactable::colDef(
+            event = colDef(name = 'Event'),
+            name = colDef(name = 'Event name', minWidth = 300),
+            is = colDef(
               name = 'Internal Standard',
               minWidth = 150
             ),
-            qis = reactable::colDef(
+            qis = colDef(
               name = 'QIS (NmL/min)',
               minWidth = 100
             ),
-            technique = reactable::colDef(
+            technique = colDef(
               name = 'Technique/Reaction',
               minWidth = 150,
               cell = reactable.extras::dropdown_extra(
@@ -137,72 +141,38 @@ mod_chemometrics_server <- function(id, app_state) {
         )
     })
 
-    tech <- shiny::reactiveValues()
+    # Reactive values for techniques
+    tech <- reactiveValues()
 
-    shiny::observeEvent(input$dropdown, {
+    observeEvent(input$dropdown, {
       name <- app_state$bd() %>%
-        dplyr::slice_head(n = 1, by = event) %>%
-        dplyr::filter(dplyr::row_number() == as.numeric(input$dropdown$row)) %>%
-        dplyr::pull(event) %>%
+        slice_head(n = 1, by = event) %>%
+        filter(row_number() == as.numeric(input$dropdown$row)) %>%
+        pull(event) %>%
         as.character()
 
       tech[[name]] <- input$dropdown$value
     })
 
-    mass <- shiny::reactive({
-      app_state$path() %>%
-        as.character %>%
-        strsplit(" ") %>%
-        unlist %>%
-        {
-          .[length(.) - 1]
-        } %>%
-        as.numeric(.) /
-        1000000
-    })
+    # Create ChemCalculations object
+    chem <- reactive({
+      req(tech)
 
-    chem_values <- shiny::eventReactive(input$btn_flow, {
-      sel_events <- function(which) {
-        values <- shiny::reactiveValuesToList(tech) %>%
-          unlist %>%
-          purrr::discard(~ .x == "") %>%
-          names %>%
-          as.numeric
-
-        app_state$bd() %>%
-          dplyr::filter(event == values) %>%
-          dplyr::slice_head(n = 1, by = event) %>%
-          dplyr::pull({{ which }})
-      }
-
-      data.frame(
-        event = sel_events(event),
-        name = sel_events(name),
-        technique = shiny::reactiveValuesToList(tech) %>%
-          unlist %>%
-          purrr::discard(~ .x == "")
-      ) %>%
-        dplyr::mutate(
-          is = app_state$setting() %>%
-            tidyr::drop_na(internal_standar) %>%
-            dplyr::pull(compound) %>%
-            tolower(),
-          qis = sel_events(fic_140)
-        ) %>%
-        dplyr::left_join(app_state$gc(), by = dplyr::join_by('event')) %>%
-        dplyr::rowwise() %>%
-        dplyr::mutate(dplyr::across(
-          10:ncol(.),
-          ~ qis * (. / get(is)) * (60 / (22.4 * mass() * 1000))
-        )) %>%
-        dplyr::ungroup() %>%
-        tidyr::drop_na(time)
-    })
+      ChemCalculations$new(
+        setting = isolate(app_state$setting()),
+        tech = reactiveValuesToList(tech),
+        path = isolate(app_state$path()),
+        bd = isolate(app_state$bd()),
+        gc = isolate(app_state$gc()),
+        ms = isolate(app_state$ms())
+      )
+    }) %>%
+      bindEvent(input$btn_flow)
 
     ## Molar flow --------------------------------------------------------------------------------------------------------
 
-    output$flow_compounds <- shiny::renderUI({
-      shiny::req(app_state$gc)
+    output$flow_compounds <- renderUI({
+      req(app_state$gc())
 
       comp <- colnames(app_state$gc())[-c(1:5)] %>%
         {
@@ -210,20 +180,21 @@ mod_chemometrics_server <- function(id, app_state) {
         } %>%
         change_str('_', ' ')
 
-      shinyWidgets::pickerInput(
+      pickerInput(
         inputId = ns("graph_compounds"),
         label = "Select compounds to plot",
         choices = comp,
         multiple = TRUE,
         selected = comp,
-        options = list(`actions-box` = TRUE, `live-search` = TRUE),
+        options = list(`actions-box` = TRUE, `live-search` = TRUE)
       )
     })
 
-    output$flow_events <- shiny::renderUI({
-      selected <- chem_values() %>% dplyr::pull(event) %>% unique()
+    output$flow_events <- renderUI({
+      req(chem())
+      selected <- chem()$chem_values %>% pull(event) %>% unique()
 
-      shinyWidgets::pickerInput(
+      pickerInput(
         inputId = ns("graph_event"),
         label = "Select events to plot",
         choices = selected,
@@ -234,34 +205,17 @@ mod_chemometrics_server <- function(id, app_state) {
     })
 
     mf <- reactive({
-      shiny::req(chem_values())
-      shiny::req(input$graph_compounds)
-      shiny::req(input$graph_event)
+      req(chem(), input$graph_compounds, input$graph_event)
 
-      chem_values() %>%
-        dplyr::select(event, time, 9:ncol(.)) %>%
-        tidyr::pivot_longer(
-          cols = 3:ncol(.),
-          names_to = 'Compound',
-          values_to = 'value'
-        ) %>%
-        dplyr::filter(!Compound %in% c('argon', 'nitrogen')) %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
-        dplyr::filter(
-          Compound %in% input$graph_compounds & event %in% input$graph_event
-        )
+      chem()$molar_flows(
+        comps = input$graph_compounds,
+        events = input$graph_event
+      )
     })
 
-    output$molar_flow <- plotly::renderPlotly({
-      shiny::req(chem_values())
-
-      event_names <- chem_values() %>%
-        dplyr::summarise(name = unique(name), .by = event) %>%
-        dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
-        {
-          setNames(.$name, .$event)
-        }
-
+    output$molar_flow <- renderPlotly({
+      req(chem())
+      dplyr::glimpse(mf())
       molar_plot <- mf() %>%
         plot(
           x = time,
@@ -277,20 +231,20 @@ mod_chemometrics_server <- function(id, app_state) {
             facet = list(
               scales = 'fixed',
               ncol = 2,
-              labeller = ggplot2::as_labeller(event_names)
+              labeller = as_labeller(chem()$event_names(filter = F))
             )
           )
         ) +
-        ggplot2::theme(
-          axis.text = ggplot2::element_text(color = 'black', size = 10),
-          axis.title = ggplot2::element_text(size = 12),
-          panel.spacing = ggplot2::unit(0.5, "cm"),
-          plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
-          panel.background = ggplot2::element_rect(colour = 'black')
+        theme(
+          axis.text = element_text(color = 'black', size = 10),
+          axis.title = element_text(size = 12),
+          panel.spacing = unit(0.5, "cm"),
+          plot.margin = unit(c(0, 0, 2, 2), 'cm'),
+          panel.background = element_rect(colour = 'black')
         )
 
-      total_height <- 180 * length(unique(chem_values()$event))
-      plotly::ggplotly(
+      total_height <- 180 * length(unique(chem()$chem_values$event))
+      ggplotly(
         molar_plot,
         height = total_height,
         dynamicTicks = T,
@@ -300,78 +254,12 @@ mod_chemometrics_server <- function(id, app_state) {
 
     ### Conversion --------------------------------------------------------------------------------------------
 
-    reactants <- shiny::reactive({
-      app_state$setting() %>%
-        dplyr::filter(grepl("Reactant", type)) %>%
-        dplyr::pull(compound) %>%
-        change_str(" ", "_", T)
+    conversion <- reactive({
+      req(chem())
+      chem()$conversion()
     })
 
-    avgs <- shiny::reactive({
-      plyr::ddply(
-        .data = chem_values() %>% dplyr::filter(technique == 'By Pass'),
-        .variables = 'event',
-        .fun = \(x) {
-          mean_flow <- \(x) x[which(!x %in% boxplot.stats(x)$out)] %>% mean
-
-          x %>%
-            dplyr::select(technique, dplyr::all_of(reactants())) %>%
-            dplyr::summarise(
-              technique = unique(technique),
-              dplyr::across(.cols = 2:ncol(.), .fns = ~ mean_flow(.x))
-            )
-        }
-      )
-    })
-
-    bypass <- shiny::reactive({
-      chem_values() %>%
-        dplyr::select(event, technique) %>%
-        dplyr::distinct() %>%
-        dplyr::filter(technique == 'By Pass') %>%
-        dplyr::left_join(avgs()) %>%
-        dplyr::transmute(
-          event,
-          technique,
-          dplyr::across(.cols = reactants(), .names = "{.col}_bypass")
-        )
-    })
-
-    event_names <- shiny::reactive({
-      chem_values() %>%
-        dplyr::filter(technique == 'TOS') %>%
-        dplyr::summarise(name = unique(name), .by = event) %>%
-        dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
-        {
-          setNames(.$name, .$event)
-        }
-    })
-
-    conversion <- shiny::reactive({
-      req(app_state$setting())
-
-      chem_values() %>%
-        dplyr::filter(technique == 'TOS') %>%
-        dplyr::left_join(
-          bypass() %>% dplyr::mutate(event = event + 1),
-          by = dplyr::join_by('event')
-        ) %>%
-        dplyr::mutate(dplyr::across(
-          .cols = reactants(),
-          .fns = ~ 100 *
-            ((get(paste0(dplyr::cur_column(), "_bypass")) - .) /
-              get(paste0(dplyr::cur_column(), "_bypass")))
-        )) %>%
-        dplyr::select(time, event, dplyr::all_of(reactants())) %>%
-        tidyr::pivot_longer(
-          cols = 3:ncol(.),
-          names_to = 'Compound',
-          values_to = 'value'
-        ) %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' '))
-    })
-
-    output$conversion <- plotly::renderPlotly({
+    output$conversion <- renderPlotly({
       req(conversion())
 
       conversion_plot <- conversion() %>%
@@ -389,81 +277,33 @@ mod_chemometrics_server <- function(id, app_state) {
           args = list(
             facet = list(
               ncol = 2,
-              labeller = ggplot2::as_labeller(event_names())
+              labeller = as_labeller(chem()$event_names())
             )
           )
         ) +
-        ggplot2::theme(
-          axis.text.y = ggplot2::element_text(color = 'black', size = 10),
-          axis.title.y = ggplot2::element_text(size = 12),
-          panel.spacing = ggplot2::unit(0.5, "cm"),
-          plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
-          panel.background = ggplot2::element_rect(colour = 'black')
+        theme(
+          axis.text.y = element_text(color = 'black', size = 10),
+          axis.title.y = element_text(size = 12),
+          panel.spacing = unit(0.5, "cm"),
+          plot.margin = unit(c(0, 0, 2, 2), 'cm'),
+          panel.background = element_rect(colour = 'black')
         )
 
       total_height <- 180 + 180 * length(input$graph_event) / 2
-      plotly::ggplotly(conversion_plot, height = total_height, dynamicTicks = T)
+      ggplotly(conversion_plot, height = total_height, dynamicTicks = T)
     })
 
     ### Mass balance -------------------------------------------------------------------------------------------
 
-    mb <- shiny::reactive({
-      req(app_state$setting())
-
-      c_in <- app_state$setting() %>%
-        dplyr::mutate(compound = change_str(compound, " ", "_", T)) %>%
-        dplyr::filter(compound %in% names(chem_values()))
-
-      mass_plot <- chem_values() %>%
-        dplyr::filter(technique == 'TOS') %>%
-        dplyr::select(event, time, dplyr::any_of(c_in$compound))
-
-      b_in <- bypass() %>%
-        dplyr::relocate(event, technique, dplyr::contains(c_in$compound)) %>%
-        {
-          as.matrix(x = .[, 3:ncol(.)])
-        } %*%
-        as.matrix(
-          dplyr::filter(c_in, compound %in% reactants()) %>% .[, 4:6]
-        ) %>%
-        dplyr::as_tibble() %>%
-        dplyr::mutate(event = bypass()$event + 1)
-
-      mass_plot <- as.matrix(mass_plot[, 3:ncol(mass_plot)]) %*%
-        as.matrix(c_in[, 4:6]) %>%
-        dplyr::as_tibble() %>%
-        dplyr::mutate(event = mass_plot$event, time = mass_plot$time) %>%
-        dplyr::left_join(
-          b_in,
-          by = dplyr::join_by('event'),
-          suffix = c("_out", "_in")
-        ) %>%
-        dplyr::transmute(
-          event,
-          time,
-          across(
-            .cols = ends_with("_out"),
-            .fns = ~ .x /
-              get(stringr::str_replace(dplyr::cur_column(), "_out", "_in")),
-            .names = "{stringr::str_replace(.col, '_out', '')}"
-          )
-        ) %>%
-        tidyr::pivot_longer(
-          cols = 3:ncol(.),
-          names_to = "Compound",
-          values_to = "value"
-        ) %>%
-        dplyr::mutate(
-          Compound = change_str(Compound, '_', ' '),
-          value = value * 100
-        ) %>%
-        dplyr::filter(event %in% input$graph_event)
+    mb <- reactive({
+      req(chem())
+      chem()$mass_balance(events = input$graph_event)
     })
 
-    output$mass_balance <- plotly::renderPlotly({
+    output$mass_balance <- renderPlotly({
       req(mb())
 
-      mass_plot <- mb() %>%
+      mass_plot <- mb()$data %>%
         plot(
           x = time,
           y = value,
@@ -477,36 +317,30 @@ mod_chemometrics_server <- function(id, app_state) {
           args = list(
             facet = list(
               ncol = 1,
-              labeller = ggplot2::as_labeller(event_names())
+              labeller = as_labeller(chem()$event_names())
             )
           )
         ) +
-        ggplot2::theme(
-          axis.text.y = ggplot2::element_text(color = 'black', size = 10),
-          axis.title.y = ggplot2::element_text(size = 12),
-          panel.spacing = ggplot2::unit(0.5, "cm"),
-          plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
-          panel.background = ggplot2::element_rect(colour = 'black')
+        theme(
+          axis.text.y = element_text(color = 'black', size = 10),
+          axis.title.y = element_text(size = 12),
+          panel.spacing = unit(0.5, "cm"),
+          plot.margin = unit(c(0, 0, 2, 2), 'cm'),
+          panel.background = element_rect(colour = 'black')
         )
 
       total_height <- 180 + 180 * length(input$graph_event) / 2
-      plotly::ggplotly(mass_plot, height = total_height, dynamicTicks = T)
+      ggplotly(mass_plot, height = total_height, dynamicTicks = T)
     })
 
-    output$mass_summary <- reactable::renderReactable({
-      mb() %>%
-        dplyr::group_by(event, Compound) %>%
-        dplyr::summarise(
-          avg = round(mean(value), 2),
-          sd = round(sd(value), 2)
-        ) %>%
-        dplyr::filter(event %in% input$graph_event) %>%
+    output$mass_summary <- renderReactable({
+      mb()$summary %>%
         custom_reactable(
           columns = list(
-            event = reactable::colDef(name = 'Event'),
-            Compound = reactable::colDef(name = 'Compound'),
-            avg = reactable::colDef(name = 'Average'),
-            sd = reactable::colDef(name = 'Standard deviation')
+            event = colDef(name = 'Event'),
+            Compound = colDef(name = 'Compound'),
+            avg = colDef(name = 'Average'),
+            sd = colDef(name = 'Standard deviation')
           ),
           style = "border-radius: '3px'; margin-bottom: 10px"
         )
@@ -514,30 +348,14 @@ mod_chemometrics_server <- function(id, app_state) {
 
     ### Boxplot ------------------------------------------------------------------------------------------------
 
-    boxplot_data <- shiny::reactive({
-      chem_values() %>%
-        dplyr::filter(technique == 'TOS') %>%
-        dplyr::left_join(
-          bypass() %>% dplyr::mutate(event = event + 1),
-          by = dplyr::join_by('event')
-        ) %>%
-        dplyr::mutate(dplyr::across(
-          .cols = reactants(),
-          .fns = ~ (get(paste0(dplyr::cur_column(), "_bypass")) - .)
-        )) %>%
-        dplyr::select(time, event, 10:20) %>%
-        tidyr::pivot_longer(
-          cols = 3:ncol(.),
-          names_to = 'Compound',
-          values_to = 'value'
-        ) %>%
-        dplyr::mutate(Compound = change_str(Compound, '_', ' ')) %>%
-        dplyr::filter(
-          Compound %in% input$graph_compounds & event %in% input$graph_event
-        )
+    boxplot_data <- reactive({
+      chem()$boxplot(
+        compounds = input$graph_compounds,
+        events = input$graph_event
+      )
     })
 
-    output$boxplot <- plotly::renderPlotly({
+    output$boxplot <- renderPlotly({
       p <- boxplot_data() %>%
         plot(
           x = Compound,
@@ -551,44 +369,44 @@ mod_chemometrics_server <- function(id, app_state) {
             facet = list(
               scales = "free",
               ncol = 2,
-              labeller = ggplot2::as_labeller(event_names())
+              labeller = as_labeller(chem()$event_names())
             ),
             boxp = list(show.legend = F)
           ),
           custom_color = T
         ) +
-        ggplot2::stat_summary(
+        stat_summary(
           fun = mean,
           geom = "point",
           shape = 23,
           fill = "white",
           size = 2.5
         ) +
-        ggplot2::stat_summary(
+        stat_summary(
           fun = min,
           geom = "point",
           shape = 25,
           size = 2.5
         ) +
-        ggplot2::stat_summary(
+        stat_summary(
           fun = max,
           geom = "point",
           shape = 19,
           size = 2.5
         ) +
-        ggplot2::theme(
-          axis.text.y = ggplot2::element_text(color = 'black', size = 10),
-          axis.title.y = ggplot2::element_text(size = 12),
-          panel.spacing = ggplot2::unit(0.5, "cm"),
-          plot.margin = ggplot2::unit(c(0, 0, 2, 2), 'cm'),
-          panel.background = ggplot2::element_rect(colour = 'black'),
-          axis.title.x = ggplot2::element_blank(),
-          axis.text.x = ggplot2::element_blank(),
-          axis.ticks.x = ggplot2::element_blank()
+        theme(
+          axis.text.y = element_text(color = 'black', size = 10),
+          axis.title.y = element_text(size = 12),
+          panel.spacing = unit(0.5, "cm"),
+          plot.margin = unit(c(0, 0, 2, 2), 'cm'),
+          panel.background = element_rect(colour = 'black'),
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank()
         )
 
       total_height <- 180 + 180 * length(input$graph_event) / 2
-      boxp <- plotly::ggplotly(p, height = total_height)
+      boxp <- ggplotly(p, height = total_height)
 
       boxp$x$data <- lapply(boxp$x$data, function(x) {
         if (x$type == "box") {
@@ -604,7 +422,9 @@ mod_chemometrics_server <- function(id, app_state) {
     })
 
     return(list(
-      chem_values = chem_values,
+      chem_values = reactive({
+        chem()$chem_values
+      }),
       molar_flow = mf,
       conversion = conversion,
       mass_balance = mb,
