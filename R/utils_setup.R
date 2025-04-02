@@ -18,9 +18,7 @@
 setup <- function() {
   if (!dir.exists(paths = "~/Reactor Dashboard")) {
     dir.create(path = "~/Reactor Dashboard/Reactions", recursive = TRUE)
-    file.copy(
-      from = "Reaction settings.xlsx",
-      to = "~/Reactor Dashboard/Reactions/Standard.xlsx"
-    )
+    download.file(url = "https://github.com/jsmendozap/dashboard-reactor/blob/main/Reaction%20settings.xlsx",
+                  destfile = "~/Reactor Dashboard/Reactions/Standard.xlsx")
   }
 }
