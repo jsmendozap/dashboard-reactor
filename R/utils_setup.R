@@ -40,10 +40,10 @@ setup <- function() {
     )
   }
 
-  if (.Platform$OS.type == "windows") {
-    print(normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/"))
-    Sys.setenv(
-      QUARTO_PATH = normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/")
-    )
-  }
+  #if (.Platform$OS.type == "windows") {
+  #  print(normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/"))
+  #  Sys.setenv(
+  #    QUARTO_PATH = normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/")
+  #  )
+  #}
 }
