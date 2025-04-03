@@ -41,7 +41,8 @@ setup <- function() {
   }
 
   if (.Platform$OS.type == "windows") {
-    quarto_path <- normalizePath(get_golem_options("path"), winslash = "\\")
+    #quarto_path <- normalizePath(get_golem_options("path"), winslash = "\\")
+    print(Sys.getenv("RUST_QUARTO_PATH"))
     quarto_path <- gsub("\\[\\[1\\]\\]$", "", quarto_path)
     cat(paste("ruta recibida", quarto_path))
     Sys.setenv(QUARTO_PATH = quarto_path)
