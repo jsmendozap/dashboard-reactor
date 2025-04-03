@@ -40,9 +40,9 @@ setup <- function() {
     )
   }
 
-  #if (.Platform$OS.type == "windows") {
-  #  quarto_path <- normalizePath(get_golem_options("path"), winslash = "\\")
-  #  print(Sys.getenv("RUST_QUARTO_PATH"))
-  #  Sys.setenv(QUARTO_PATH = quarto_path)
-  #}
+  if (.Platform$OS.type == "windows") {
+    #quarto_path <- normalizePath(get_golem_options("path"), winslash = "/")
+    print(Sys.getenv("QUARTO_PATH"))
+    Sys.setenv(QUARTO_PATH = Sys.getenv("QUARTO_PATH"))
+  }
 }
