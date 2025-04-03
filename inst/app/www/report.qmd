@@ -49,6 +49,7 @@ pkgs <- c(
 sapply(pkgs, \(x) {
   if (!requireNamespace(x)) {
     install.packages(x, repos = "https://cloud.r-project.org")
+    library(x, character.only = T)
   } else {
     library(x, character.only = T)
   }
