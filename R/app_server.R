@@ -173,7 +173,7 @@ app_server <- function(input, output, session) {
           chem_values = app_state$chem_values(),
           molar_flow = app_state$molar_flow(),
           conversion = app_state$conversion(),
-          mass_balance = app_state$mass_balance(),
+          mass_balance = app_state$mass_balance()$data,
           boxplot = app_state$boxplot()
         )
       )
