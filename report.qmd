@@ -25,6 +25,10 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
+
+user_lib <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "R", "win-library", as.character(getRversion())), winslash = "/")
+.libPaths(c(user_lib, .libPaths()))
+
 pkgs <- c(
   "reactable",
   "tidyverse",
@@ -34,7 +38,7 @@ pkgs <- c(
   "magrittr"
 )
 sapply(pkgs, \(x) {
-  if (!requireNamespace) {
+  if (!requireNamespace(x)) {
     install.packages(x)
   } else {
     library(x, character.only = T)
