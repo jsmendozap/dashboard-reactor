@@ -10,7 +10,7 @@
 run_app <- function(
   path = NULL,
   onStart = setup,
-  options = list(),
+  options = list(launch.browser = TRUE),
   enableBookmarking = NULL,
   uiPattern = "/",
   ...
