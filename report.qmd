@@ -25,7 +25,21 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
-pacman::p_load(reactable, tidyverse, reactablefmtr, plotly, dygraphs, magrittr)
+pkgs <- c(
+  "reactable",
+  "tidyverse",
+  "reactablefmtr",
+  "plotly",
+  "dygraphs",
+  "magrittr"
+)
+sapply(pkgs, \(x) {
+  if (!requireNamespace) {
+    install.packages(x)
+  } else {
+    library(x, character.only = T)
+  }
+})
 ```
 
 

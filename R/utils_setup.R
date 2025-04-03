@@ -14,11 +14,35 @@
 #' @return This function does not return a value. It performs its operations
 #' as a side effect by creating directories and copying files.
 #'
+#' @importFrom golem get_golem_options
+#'
 #' @noRd
+
 setup <- function() {
   if (!dir.exists(paths = "~/Reactor Dashboard")) {
     dir.create(path = "~/Reactor Dashboard/Reactions", recursive = TRUE)
-    download.file(url = "https://github.com/jsmendozap/dashboard-reactor/blob/main/Reaction%20settings.xlsx",
-                  destfile = "~/Reactor Dashboard/Reactions/Standard.xlsx")
+    excel_path <- normalizePath(
+      file.path(
+        Sys.getenv("USERPROFILE"),
+        "R",
+        "win-library",
+        as.character(getRversion()),
+        "dashboardReactor",
+        "app",
+        "www",
+        "Reaction settings.xlsx"
+      ),
+      winslash = "/"
+    )
+    file.copy(
+      from = excel_path,
+      to = "~/Reactor Dashboard/Reactions/Standard.xlsx"
+    )
+  }
+
+  if (.Platform$OS.type == "windows") {
+    quarto_path <- get_golem_options("path")
+    cat(paste("ruta recibida", quarto_path))
+    Sys.setenv(QUARTO_PATH = quarto_path)
   }
 }

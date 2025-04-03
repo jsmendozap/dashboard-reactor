@@ -19,7 +19,7 @@
 #'
 #' @return A `dygraph` object with the specified configurations.
 #'
-#' @importFrom dygraphs dygraph dySeries dyRangeSelector dyOptions dyCSS dyLegend dyShading
+#' @importFrom dygraphs dygraph dySeries dyRangeSelector dyOptions dyLegend dyShading
 #' @importFrom dplyr select all_of slice_head filter row_number pull slice n
 #' @importFrom reactable getReactableState
 #' @noRd
@@ -33,7 +33,6 @@ renderdy <- function(bd, selected, legend) {
       dySeries(selected[1]) %>%
       dyRangeSelector() %>%
       dyOptions(useDataTimezone = TRUE) %>%
-      dyCSS("dygraph.css") %>%
       dyLegend(labelsDiv = legend)
 
     if (length(selected) >= 2) {

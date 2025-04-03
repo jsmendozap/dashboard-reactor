@@ -20,11 +20,11 @@
 #' @importFrom shinyWidgets pickerInput
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom dplyr slice_head filter mutate pull select distinct left_join rowwise ungroup
-#'   across any_of contains relocate summarise glimpse
+#'   across any_of contains relocate summarise
 #' @importFrom tidyr drop_na pivot_longer
 #' @importFrom ggplot2 theme element_text element_rect unit as_labeller stat_summary element_blank
 #' @importFrom reactable.extras dropdown_extra
-#' 
+#'
 #' @return A list of reactive outputs, including chemometric values, molar flows,
 #'   conversions, mass balances, and box plot data.
 #'
@@ -216,7 +216,6 @@ mod_chemometrics_server <- function(id, app_state) {
 
     output$molar_flow <- renderPlotly({
       req(chem())
-      dplyr::glimpse(mf())
       molar_plot <- mf() %>%
         plot(
           x = time,
