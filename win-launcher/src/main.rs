@@ -238,7 +238,7 @@ fn find_r_path() -> Option<String> {
 
 fn run_shiny(r_path: String, sender: Sender<String>) -> Option<std::process::Child> {
     // Detecting Quarto
-    let quarto_path = match detect_quarto() {
+    let _quarto_path = match detect_quarto() {
         Ok(path) => path,
         Err(e) => {
             sender.send(format!("[ERROR] {}", e)).unwrap();
@@ -246,28 +246,47 @@ fn run_shiny(r_path: String, sender: Sender<String>) -> Option<std::process::Chi
         }
     };
 
+    /*
+    unsafe {
+        env::set_var("QUARTO_PATH", &quarto_path);
+    }*/
+
     let r_script = format!(
         r##"
         tryCatch({{
-
-            user_lib <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "Documents", "R", "lib", as.character(getRversion())))
+            user_lib <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "R", "lib", as.character(getRversion())), winslash = "/")
+    
             if (!dir.exists(user_lib)) {{
                 cat("Creating user library\n")
                 dir.create(user_lib, recursive = TRUE)
-                Rprofile <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "Documents", ".Rprofile"))
+                Rprofile <- normalizePath(file.path(Sys.getenv("USERPROFILE"), ".Rprofile"))
                 cat(sprintf("%s", .libPaths(user_lib)), file = Rprofile, sep = "\n")
-                if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")
+                if (!requireNamespace("remotes", quietly = TRUE)) {{
+                    message("Installing remotes package...")
+                    install.packages(
+                        "remotes",
+                        repos = "https://cloud.r-project.org",
+                        quiet = TRUE,
+                        dependencies = TRUE
+                    )
+                }}
+                
+                # Install application
+                message("Installing dashboard-reactor...")
+                remotes::install_github(
+                    "jsmendozap/dashboard-reactor",
+                    ref = "development",
+                    dependencies = TRUE, 
+                    upgrade = "always",
+                    lib = user_lib
+                )
             }} else {{
                 .libPaths(c(user_lib, .libPaths()))
             }}
-
-            shiny::runGitHub(
-                repo = "dashboard-reactor",
-                username = "jsmendozap",
-                ref = "main",
-                launch.browser = TRUE
-            )
-
+            
+            message("Starting application...")
+            dashboardReactor::run_app()
+    
         }}, error = function(e) {{
             message("ERROR: ", e$message)
             quit(status = 1)
@@ -277,7 +296,7 @@ fn run_shiny(r_path: String, sender: Sender<String>) -> Option<std::process::Chi
 
     // 3. Executing R 
     let mut cmd = match Command::new(&r_path)
-        .args(["--vanilla", "-e", &r_script, &quarto_path])
+        .args(["--vanilla", "-e", &r_script])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .creation_flags(0x08000000)
