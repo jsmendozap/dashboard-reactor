@@ -25,7 +25,7 @@ setup <- function() {
       file.path(
         Sys.getenv("USERPROFILE"),
         "R",
-        "win-library",
+        "lib",
         as.character(getRversion()),
         "dashboardReactor",
         "app",
@@ -42,6 +42,8 @@ setup <- function() {
 
   if (.Platform$OS.type == "windows") {
     print(normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/"))
-    Sys.setenv(QUARTO_PATH = normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/"))
+    Sys.setenv(
+      QUARTO_PATH = normalizePath(Sys.getenv("QUARTO_PATH"), winslash = "/")
+    )
   }
 }

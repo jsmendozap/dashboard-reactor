@@ -250,7 +250,7 @@ fn run_shiny(r_path: String, sender: Sender<String>) -> Option<std::process::Chi
         r##"
         tryCatch({{
 
-            user_lib <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "Documents", "R", "win-library", as.character(getRversion())))
+            user_lib <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "Documents", "R", "lib", as.character(getRversion())))
             if (!dir.exists(user_lib)) {{
                 cat("Creating user library\n")
                 dir.create(user_lib, recursive = TRUE)

@@ -25,6 +25,18 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F)
+
+user_lib <- normalizePath(
+  file.path(
+    Sys.getenv("USERPROFILE"),
+    "R",
+    "lib",
+    as.character(getRversion())
+  ),
+  winslash = "/"
+)
+.libPaths(c(user_lib, .libPaths()))
+
 pkgs <- c(
   "reactable",
   "tidyverse",
@@ -33,9 +45,10 @@ pkgs <- c(
   "dygraphs",
   "magrittr"
 )
+
 sapply(pkgs, \(x) {
-  if (!requireNamespace) {
-    install.packages(x)
+  if (!requireNamespace(x)) {
+    install.packages(x, repos = "https://cloud.r-project.org")
   } else {
     library(x, character.only = T)
   }
@@ -91,23 +104,22 @@ change_str <- function(string, from, to, lower = F) {
 }
 
 custom_plot <- function(
-  data,
-  x,
-  y,
-  points = F,
-  lines = F,
-  hline = F,
-  area = F,
-  boxp = F,
-  facet = NULL,
-  xlab,
-  ylab,
-  title = NULL,
-  scale_y = NULL,
-  custom_color = F,
-  args = list(),
-  ...
-) {
+    data,
+    x,
+    y,
+    points = F,
+    lines = F,
+    hline = F,
+    area = F,
+    boxp = F,
+    facet = NULL,
+    xlab,
+    ylab,
+    title = NULL,
+    scale_y = NULL,
+    custom_color = F,
+    args = list(),
+    ...) {
   p <- ggplot2::ggplot(data, ggplot2::aes(x = {{ x }}, y = {{ y }}, ...))
 
   p <- p +
@@ -270,7 +282,7 @@ tryCatch(
       filter(Value != "") %>%
       custom_reactable()
   },
-  error = \(e) cat('Not information provided')
+  error = \(e) cat("Not information provided")
 )
 ```
 
@@ -284,7 +296,7 @@ tryCatch(
       filter(Value != "") %>%
       custom_reactable()
   },
-  error = \(e) cat('Not information provided')
+  error = \(e) cat("Not information provided")
 )
 ```
 

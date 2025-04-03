@@ -126,7 +126,22 @@ app_server <- function(input, output, session) {
     filename = "report.html",
     content = function(file) {
       tempReport <- file.path(tempdir(), "report.qmd")
-      file.copy("report.qmd", tempReport, overwrite = TRUE)
+
+      report_path <- normalizePath(
+        file.path(
+          Sys.getenv("USERPROFILE"),
+          "R",
+          "lib",
+          as.character(getRversion()),
+          "dashboardReactor",
+          "app",
+          "www",
+          "report.qmd"
+        ),
+        winslash = "/"
+      )
+
+      file.copy(report_path, tempReport, overwrite = TRUE)
 
       quarto_render(
         input = tempReport,
