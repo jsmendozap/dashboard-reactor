@@ -1,0 +1,662 @@
+---
+title: "Experiment report"
+author: "Dusselier Group"
+format:
+  html: 
+    toc: true
+    self-contained: true
+params:
+  df: NA
+  bd: NA
+  gc: NA
+  ms: NA
+  path: NA
+  material: NA
+  preparation: NA
+  cc: NA
+  fcc: NA
+  scc: NA
+  chem_values: NA
+  molar_flow: NA
+  conversion: NA
+  mass_balance: NA
+  boxplot: NA
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F)
+pkgs <- c(
+  "reactable",
+  "tidyverse",
+  "reactablefmtr",
+  "plotly",
+  "dygraphs",
+  "magrittr"
+)
+sapply(pkgs, \(x) {
+  if (!requireNamespace) {
+    install.packages(x)
+  } else {
+    library(x, character.only = T)
+  }
+})
+```
+
+
+```{r}
+compounds <- tibble::tribble(
+  ~name,
+  ~color,
+  "Hydrogen",
+  "orange",
+  "Carbon monoxide",
+  "lightgreen",
+  "Carbon dioxide",
+  "red",
+  "Methane",
+  "blue",
+  "Ethane",
+  "purple",
+  "Ethylene",
+  "yellow",
+  "Propane",
+  "gray",
+  "Propylene",
+  "royalblue",
+  "n-butane",
+  "deeppink",
+  "i-butane",
+  "mediumseagreen",
+  "Cis-2-butene",
+  "darkviolet",
+  "t-2-butene",
+  "chartreuse",
+  "Nitrogen",
+  "dodgerblue",
+  "Argon",
+  "turquoise",
+  "Water",
+  "olive"
+)
+
+change_str <- function(string, from, to, lower = F) {
+  purrr::map_vec(
+    .x = string,
+    .f = ~ .x %>%
+      {
+        ifelse(lower, tolower(.), stringr::str_to_title(.))
+      } %>%
+      stringr::str_replace_all(pattern = from, replacement = to)
+  )
+}
+
+custom_plot <- function(
+  data,
+  x,
+  y,
+  points = F,
+  lines = F,
+  hline = F,
+  area = F,
+  boxp = F,
+  facet = NULL,
+  xlab,
+  ylab,
+  title = NULL,
+  scale_y = NULL,
+  custom_color = F,
+  args = list(),
+  ...
+) {
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = {{ x }}, y = {{ y }}, ...))
+
+  p <- p +
+    list(
+      if (points) {
+        if ("points" %in% names(args)) {
+          do.call(ggplot2::geom_point, args$points)
+        } else {
+          ggplot2::geom_point()
+        }
+      },
+      if (lines) {
+        if ("lines" %in% names(args)) {
+          do.call(ggplot2::geom_line, args$lines)
+        } else {
+          ggplot2::geom_line()
+        }
+      },
+      if (area) {
+        if ("area" %in% names(args)) {
+          do.call(ggplot2::geom_area, args$area)
+        } else {
+          ggplot2::geom_area()
+        }
+      },
+      if (hline) {
+        if ("hline" %in% names(args)) {
+          do.call(ggplot2::geom_hline, args$hline)
+        } else {
+          ggplot2::geom_hline()
+        }
+      },
+      if (boxp) {
+        if ("boxp" %in% names(args)) {
+          do.call(ggplot2::geom_boxplot, args$boxp)
+        } else {
+          ggplot2::geom_boxplot()
+        }
+      },
+      if (!is.null(facet)) {
+        if ("facet" %in% names(args)) {
+          purrr::exec(
+            .fn = ggplot2::facet_wrap,
+            ~ .data[[facet]],
+            !!!args$facet
+          )
+        } else {
+          ggplot2::facet_wrap(~ .data[[facet]])
+        }
+      },
+      if (custom_color) {
+        cmp <- compounds %>%
+          {
+            setNames(.$color, .$name)
+          }
+        ggplot2::scale_fill_manual(
+          values = cmp[names(cmp) %in% unique(data$Compound)]
+        )
+      },
+      if (!is.null(scale_y)) do.call(ggplot2::scale_y_continuous, scale_y)
+    )
+
+  p <- p +
+    ggplot2::labs(x = xlab, y = ylab, title = title) +
+    ggplot2::theme_bw()
+
+  return(p)
+}
+```
+
+```{css}
+.dygraphs.html-widget.html-fill-item.html-widget-static-bound {
+  overflow: hidden;
+}
+
+.plotly.html-widget.html-widget-static-bound.js-plotly-plot {
+  height: auto !important; 
+}
+```
+
+```{r}
+custom_reactable <- function(bd, ...) {
+  reactable(
+    bd,
+    defaultColDef = colDef(
+      align = "center",
+      headerStyle = list(background = "#f7f7f8")
+    ),
+    defaultPageSize = 10,
+    onClick = "select",
+    bordered = T,
+    highlight = T,
+    resizable = T,
+    showSortable = T,
+    ...
+  )
+}
+```
+
+::: {.callout-note}
+**Sample name**: `r params$path %>% as.character %>% strsplit('/') %>% unlist %>% {.[length(.)]}`
+:::
+
+## Experiment description
+
+### Leak test
+
+```{r}
+test <- params$df %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(sum = sum(fic_110, fic_120, fic_130, fic_140)) %>%
+  ungroup() %>%
+  filter(n > 5 & p_set != 0 & sum == 0) %>%
+  select(event, n, p_set, sum, pt_310) %>%
+  filter(event == max(event)) %>%
+  slice(c(1, n())) %>%
+  {
+    c(event = unique(.$event), dif = .$pt_310[1] - .$pt_310[2])
+  }
+
+if (!is.na(test[1])) {
+  str_glue("Event: {test[1]} \nPressure difference: {round(test[2], 2)}")
+} else {
+  cat("No Leak test found in data")
+}
+```
+
+### Catalyst characterization
+
+:::{.callout-note}
+**Material description:** `{r} params$material`
+
+**Material preparation:** `{r} params$preparation`
+:::
+
+
+::: {.panel-tabset}
+
+#### Details
+
+```{r}
+tryCatch(
+  expr = {
+    params$cc %>%
+      as_tibble() %>%
+      custom_reactable()
+  },
+  error = \(e) cat("Not information provided")
+)
+```
+
+#### Fresh
+
+```{r}
+tryCatch(
+  expr = {
+    params$fcc %>%
+      as_tibble() %>%
+      filter(Value != "") %>%
+      custom_reactable()
+  },
+  error = \(e) cat('Not information provided')
+)
+```
+
+#### Spent
+
+```{r}
+tryCatch(
+  expr = {
+    params$scc %>%
+      as_tibble() %>%
+      filter(Value != "") %>%
+      custom_reactable()
+  },
+  error = \(e) cat('Not information provided')
+)
+```
+
+:::
+
+
+---
+
+
+### Log summary
+
+```{r}
+params$bd %>%
+  as_tibble() %>%
+  slice_head(n = 1, by = event) %>%
+  select(event, date_time, name, time_duration, comment) %>%
+  mutate(
+    date_time = as.POSIXct(date_time, origin = "1970-01-01", tz = "UTC"),
+    comment = dplyr::na_if(comment, ".na.character")
+  ) %>%
+  custom_reactable(
+    columns = list(
+      event = colDef(name = "Event", width = 100),
+      date_time = colDef(name = "Start time", width = 200),
+      name = colDef(name = "Event name", minWidth = 200),
+      time_duration = colDef(name = "Duration", width = 100),
+      comment = colDef(name = "Observations", width = 150)
+    )
+  )
+```
+
+## Raw data
+
+### Composition plot
+
+::: {.panel-tabset}
+
+#### Time
+```{r}
+#| column: body-outset
+
+plot <- params$gc %>%
+  as_tibble() %>%
+  select(-injection) %>%
+  pivot_longer(cols = 5:ncol(.), names_to = "Compound", values_to = "value") %>%
+  mutate(
+    Compound = str_replace_all(Compound, "_", " ") %>% str_to_title(),
+    time = as.numeric(time)
+  ) %>%
+  ggplot(aes(x = time, y = value, fill = Compound)) +
+  geom_area(alpha = 0.6, color = "black", linewidth = 0.2) +
+  geom_hline(yintercept = 100, linetype = "dashed") +
+  labs(x = "Reaction time (min)", y = "Composition") +
+  facet_wrap(~event, scales = "free", ncol = 2) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(color = "black", size = 10),
+    axis.title = element_text(size = 12),
+    panel.spacing = unit(1, "lines"),
+    panel.background = element_rect(colour = "black"),
+    plot.margin = unit(c(0, 0, 2, 0), "cm")
+  )
+
+total_height <- 180 * length(unique(params$gc$event))
+ggplotly(plot, width = 900, height = total_height)
+```
+
+#### Temperature
+
+```{r}
+#| column: body-outset
+
+plot <- params$gc %>%
+  as_tibble() %>%
+  select(-injection) %>%
+  pivot_longer(cols = 5:ncol(.), names_to = "Compound", values_to = "value") %>%
+  mutate(
+    Compound = str_replace_all(Compound, "_", " ") %>% str_to_title(),
+    time = as.numeric(time)
+  ) %>%
+  ggplot(aes(x = tic_300_pv, y = value, fill = Compound)) +
+  geom_area(alpha = 0.6, color = "black", linewidth = 0.2) +
+  geom_hline(yintercept = 100, linetype = "dashed") +
+  labs(x = "Temperature (°C)", y = "Composition") +
+  facet_wrap(~event, scales = "free", ncol = 2) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(color = "black", size = 10),
+    axis.title = element_text(size = 12),
+    axis.title.x = element_text(margin = margin(t = 15)),
+    panel.spacing = unit(1, "lines"),
+    panel.background = element_rect(colour = "black"),
+    plot.margin = unit(c(0, 0, 2, 0), "cm")
+  )
+
+total_height <- 180 * length(unique(params$gc$event))
+ggplotly(plot, width = 900, height = total_height)
+```
+
+:::
+
+### Mass detector
+
+```{r}
+#| column: body-outset
+
+if (is.null(params$ms)) {
+  cat("No MS file found in folder")
+} else {
+  data <- params$ms %>%
+    as_tibble() %>%
+    select(
+      time_absolute_date_time,
+      `2_amu_hydrogen`,
+      `18_amu_water`,
+      `44_amu_co2_c3h8`
+    ) %>%
+    mutate(
+      time_absolute_date_time = as.POSIXct(
+        time_absolute_date_time,
+        origin = "1970-01-01",
+        tz = "UTC"
+      ),
+      across(.cols = contains("amu"), .fns = ~ smooth.spline(.x, spar = 0)$y)
+    ) %>%
+    rename_with(
+      .fn = ~ str_replace_all(.x, "_", " "),
+      .cols = contains("_amu_")
+    )
+
+  dygraph(data, xlab = "Reaction Time (min)") %>%
+    dyRangeSelector() %>%
+    dyLegend(width = 800) %>%
+    dyOptions(useDataTimezone = TRUE) %>%
+    dyOptions(strokeWidth = 2)
+}
+
+```
+
+## Chemometrics
+
+### Summary 
+```{r}
+#| column: body-outset
+
+chem_values <- data.frame(params$chem_values) %>%
+  dplyr::mutate(time = as.numeric(time))
+
+chem_values %>%
+  dplyr::slice_head(n = 1, by = event) %>%
+  dplyr::select(1:5) %>%
+  custom_reactable(
+    columns = list(
+      event = colDef(name = "Event", width = 100),
+      name = colDef(name = "Name", width = 300),
+      tecnique = colDef(name = "Technique", minWidth = 100),
+      is = colDef(name = "Internal Standard", width = 200),
+      qis = colDef(name = "QIS", width = 100)
+    )
+  )
+
+```
+
+### Plots
+
+::: {.panel-tabset}
+
+#### Molar flow
+
+```{r}
+#| column: body-outset
+
+event_names <- chem_values %>%
+  dplyr::summarise(name = unique(name), .by = event) %>%
+  dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
+  {
+    setNames(.$name, .$event)
+  }
+
+molar_plot <- params$molar_flow %>%
+  data.frame() %>%
+  dplyr::mutate(time = as.numeric(time)) %>%
+  custom_plot(
+    x = time,
+    y = value,
+    fill = Compound,
+    area = T,
+    xlab = "Time (min)",
+    ylab = "Molar flow (mol/h)",
+    facet = "event",
+    custom_color = T,
+    args = list(
+      area = list(alpha = 0.6, color = "black", linewidth = 0.2),
+      facet = list(
+        scales = "fixed",
+        ncol = 2,
+        labeller = ggplot2::as_labeller(event_names)
+      )
+    )
+  ) +
+  ggplot2::theme(
+    axis.text = ggplot2::element_text(color = "black", size = 10),
+    axis.title = ggplot2::element_text(size = 12),
+    panel.spacing = ggplot2::unit(0.5, "cm"),
+    plot.margin = ggplot2::unit(c(0, 0, 2, 2), "cm"),
+    panel.background = ggplot2::element_rect(colour = "black")
+  )
+
+total_height <- 180 * length(unique(chem_values$event))
+plotly::ggplotly(
+  molar_plot,
+  height = total_height,
+  dynamicTicks = T,
+  tooltip = "fill"
+)
+```
+
+#### Conversion
+
+```{r}
+#| column: body-outset
+
+event_names <- chem_values %>%
+  dplyr::filter(technique == "TOS") %>%
+  dplyr::summarise(name = unique(name), .by = event) %>%
+  dplyr::mutate(name = stringr::str_c("Event: ", event, " - ", name)) %>%
+  {
+    setNames(.$name, .$event)
+  }
+
+conversion_plot <- params$conversion %>%
+  data.frame() %>%
+  dplyr::mutate(time = as.numeric(time)) %>%
+  custom_plot(
+    x = time,
+    y = value,
+    fill = Compound,
+    shape = Compound,
+    lines = T,
+    points = T,
+    xlab = "Time (min)",
+    ylab = "Conversion (%)",
+    facet = "event",
+    scale_y = list(n.breaks = 10),
+    args = list(
+      facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names))
+    )
+  ) +
+  ggplot2::theme(
+    axis.text.y = ggplot2::element_text(color = "black", size = 10),
+    axis.title.y = ggplot2::element_text(size = 12),
+    panel.spacing = ggplot2::unit(0.5, "cm"),
+    plot.margin = ggplot2::unit(c(0, 0, 2, 2), "cm"),
+    panel.background = ggplot2::element_rect(colour = "black")
+  )
+
+total_height <- 180 + 180 * length(event_names) / 1.5
+plotly::ggplotly(conversion_plot, height = total_height, dynamicTicks = T)
+```
+
+#### Mass balance
+
+```{r}
+#| column: body-outset
+
+mass_plot <- params$mass_balance %>%
+  data.frame() %>%
+  dplyr::mutate(time = as.numeric(time)) %>%
+  custom_plot(
+    x = time,
+    y = value,
+    fill = Compound,
+    lines = T,
+    points = T,
+    xlab = "Time (min)",
+    ylab = "Mass balance",
+    facet = "event",
+    scale_y = list(n.breaks = 10),
+    args = list(
+      facet = list(ncol = 2, labeller = ggplot2::as_labeller(event_names))
+    )
+  ) +
+  ggplot2::theme(
+    axis.text.y = ggplot2::element_text(color = "black", size = 10),
+    axis.title.y = ggplot2::element_text(size = 12),
+    panel.spacing = ggplot2::unit(0.5, "cm"),
+    plot.margin = ggplot2::unit(c(0, 0, 2, 2), "cm"),
+    panel.background = ggplot2::element_rect(colour = "black")
+  )
+
+plotly::ggplotly(mass_plot, height = total_height, dynamicTicks = T)
+```
+
+```{r}
+#| column: body-outset
+#| warning: false
+
+params$mass_balance %>%
+  data.frame() %>%
+  dplyr::group_by(event, Compound) %>%
+  dplyr::summarise(avg = round(mean(value), 2), sd = round(sd(value), 2)) %>%
+  custom_reactable(
+    columns = list(
+      event = reactable::colDef(name = "Event"),
+      Compound = reactable::colDef(name = "Compound"),
+      avg = reactable::colDef(name = "Average"),
+      sd = reactable::colDef(name = "Standard deviation")
+    ),
+    style = "border-radius: '3px'"
+  )
+
+```
+
+#### Box plot
+
+```{r}
+#| column: body-outset
+
+p <- params$boxplot %>%
+  data.frame() %>%
+  custom_plot(
+    x = Compound,
+    y = value,
+    fill = Compound,
+    boxp = T,
+    xlab = "",
+    ylab = "Molar flow (mol/h)",
+    facet = "event",
+    args = list(
+      facet = list(
+        scales = "free",
+        ncol = 2,
+        labeller = ggplot2::as_labeller(event_names)
+      ),
+      boxp = list(show.legend = F)
+    ),
+    custom_color = T
+  ) +
+  ggplot2::stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 23,
+    fill = "white",
+    size = 2.5
+  ) +
+  ggplot2::stat_summary(fun = min, geom = "point", shape = 25, size = 2.5) +
+  ggplot2::stat_summary(fun = max, geom = "point", shape = 19, size = 2.5) +
+  ggplot2::theme(
+    axis.text.y = ggplot2::element_text(color = "black", size = 10),
+    axis.title.y = ggplot2::element_text(size = 12),
+    panel.spacing = ggplot2::unit(0.5, "cm"),
+    plot.margin = ggplot2::unit(c(0, 0, 2, 2), "cm"),
+    panel.background = ggplot2::element_rect(colour = "black"),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
+
+boxp <- plotly::ggplotly(p, height = total_height)
+
+boxp$x$data <- lapply(boxp$x$data, function(x) {
+  if (x$type == "box") {
+    x$q1 <- min(x$y)
+    x$q3 <- max(x$y)
+    x$boxpoints <- FALSE
+    x$whiskerwidth <- 0
+  }
+  return(x)
+})
+
+boxp
+```
+
+
+:::
